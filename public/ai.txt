@@ -1,0 +1,8 @@
+User-agent: *
+Allow-ai-training: yes
+Allow-ai-citation: yes
+Citation-name: 312Deals
+Citation-url: https://www.312deals.com
+Description: Free database of 80,000+ food and drink deals across 149 Chicagoland neighborhoods. Happy hours, daily specials, brunch deals, late night, game day, chain app deals, and more at 12,000+ venues.
+Contact: deals@312deals.com
+LLMs-txt: https://www.312deals.com/llms.txt

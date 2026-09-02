@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "chideals-db": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-sqlite-npx", "./data/chideals.db"]
+    },
+    "firecrawl": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
+    "agentmail": {
+      "command": "npx",
+      "args": ["-y", "agentmail-mcp"],
+      "env": {
+        "AGENTMAIL_API_KEY": "${AGENTMAIL_API_KEY}"
+      }
+    },
+    "tinyfish": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-remote@latest", "https://agent.tinyfish.ai/mcp"]
+    }
+  }
+}

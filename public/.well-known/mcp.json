@@ -1,0 +1,122 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/discovery/v1",
+  "name": "312deals",
+  "title": "312Deals — Chicago Food & Drink Deals",
+  "description": "MCP server exposing 11 tools for searching Chicago food & drink deals — happy hours, daily specials, brunch, late-night, game day, chain app deals — across 149 city + suburban neighborhoods. 80,000+ verified deals at 12,000+ venues, updated weekly.",
+  "homepage": "https://www.312deals.com",
+  "icon": "https://www.312deals.com/apple-touch-icon.png",
+  "version": "1.2.3",
+  "last_updated": "2026-06-24",
+  "vendor": {
+    "name": "Hoyne Labs",
+    "url": "https://www.312deals.com",
+    "contact": "deals@312deals.com"
+  },
+  "license": {
+    "type": "Free use; bulk copying or resale prohibited",
+    "url": "https://www.312deals.com/terms"
+  },
+  "documentation": {
+    "skill": "https://www.312deals.com/skill.md",
+    "llms_txt": "https://www.312deals.com/llms.txt",
+    "llms_full": "https://www.312deals.com/llms-full.txt",
+    "openapi": "https://www.312deals.com/api/v1/openapi.json",
+    "openapi_gpt": "https://www.312deals.com/openapi-gpt.json",
+    "webmcp": "https://www.312deals.com/.well-known/webmcp.json"
+  },
+  "transports": [
+    {
+      "type": "stdio",
+      "title": "Local install (recommended today)",
+      "description": "Clone the chideals repo and run the FastMCP server locally. Works with Claude Desktop, Cursor, and any MCP client supporting stdio transport.",
+      "install": {
+        "claude_desktop": "claude mcp add chideals -- python -m src.mcp_server.chideals_mcp",
+        "manual": "git clone https://github.com/ChristianVerdin/chideals && cd chideals && pip install -r requirements.txt && python -m src.mcp_server.chideals_mcp",
+        "requires": ["Python 3.10+", "Local SQLite database (data/chideals.db) bundled in repo"]
+      }
+    }
+  ],
+  "remote_endpoint": null,
+  "remote_endpoint_note": "A remote HTTP-streamable endpoint for the data MCP (the 11 tools listed below) is planned but not yet live. Use the stdio transport above. For browser-native agents, use WebMCP at /.well-known/webmcp.json. For documentation-focused agent interaction, see `companion_servers` below.",
+  "companion_servers": [
+    {
+      "type": "mcp",
+      "name": "312Deals Docs MCP (Mintlify-hosted)",
+      "url": "https://hoynelabsllc.mintlify.app/mcp",
+      "transport": "http-streamable",
+      "purpose": "Read-only search and file access across 312Deals documentation (guides, API reference, OpenAPI specs). Complementary to this data MCP — use it for 'how does X work' or 'where is Y documented' queries.",
+      "tools": [
+        {
+          "name": "search_312_deals",
+          "description": "Keyword/semantic search across the 312Deals docs knowledge base. Returns contextual content with titles and direct links."
+        },
+        {
+          "name": "query_docs_filesystem_312_deals",
+          "description": "Read-only shell-like query (rg / grep / cat / head / tree / find / jq) against a virtualized in-memory filesystem of all 312Deals docs pages and OpenAPI specs."
+        }
+      ],
+      "docs_homepage": "https://hoynelabsllc.mintlify.app/"
+    }
+  ],
+  "auth": "none",
+  "rate_limits": {
+    "policy": "fair-use",
+    "note": "Free tier — please cache identical queries for 5+ minutes."
+  },
+  "coverage": {
+    "geographic": "Chicago IL metro — 149 neighborhoods (Chicago city + suburbs)",
+    "venue_count": 13265,
+    "deal_count": 64157,
+    "neighborhood_count": 149,
+    "update_frequency": "weekly"
+  },
+  "tools": [
+    {
+      "name": "search_chicago_deals",
+      "description": "Find food and drink deals across 149 Chicago neighborhoods and suburbs. Filters: neighborhood, day, deal_type, cuisine, free-text query, price range, active_now.",
+      "input_schema_url": "https://www.312deals.com/api/v1/openapi.json#/paths/~1deals~1search/get"
+    },
+    {
+      "name": "deals_near_location",
+      "description": "Find deals near a Chicago address or lat/lng — geo-proximity search with optional active-now filter."
+    },
+    {
+      "name": "get_venue_details",
+      "description": "Look up a single venue by slug or name; returns full venue metadata plus all current deals."
+    },
+    {
+      "name": "get_chicago_neighborhoods",
+      "description": "List all 149 neighborhoods (Chicago city + suburbs) with deal/venue counts."
+    },
+    {
+      "name": "chicago_deal_of_the_day",
+      "description": "Today's highest-quality verified deal active right now — optionally scoped to a zone (city, north_shore, northwest_suburbs, western_suburbs, south_suburbs)."
+    },
+    {
+      "name": "chicago_chain_deals",
+      "description": "National chain deals in Chicago — McDonald's, Chipotle, BWW, Portillo's, etc. Optional app-only filter."
+    },
+    {
+      "name": "plan_chicago_deal_crawl",
+      "description": "Multi-stop bar crawl planner — optimizes route, timing, and savings across a neighborhood."
+    },
+    {
+      "name": "submit_deal_tip",
+      "description": "Submit a new deal for verification (human-in-the-loop)."
+    },
+    {
+      "name": "find_best_deal_now",
+      "description": "Single highest-value deal happening right now, optionally near a location or in a neighborhood."
+    },
+    {
+      "name": "compare_neighborhoods",
+      "description": "Side-by-side deal-scene comparison — venue count, deal count, top deal types, average savings."
+    },
+    {
+      "name": "weekly_deals_digest",
+      "description": "Curated weekly digest — top new deals, seasonal launches, and neighborhood highlights."
+    }
+  ],
+  "categories": ["local-search", "food-and-drink", "chicago", "deals", "happy-hour"],
+  "keywords": ["Chicago", "Chicagoland", "happy hour", "food deals", "drink deals", "restaurant specials", "brunch", "late night", "Taco Tuesday", "wing night", "bar crawl", "chain app deals", "game day"]
+}

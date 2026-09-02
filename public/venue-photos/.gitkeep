@@ -1,0 +1,3 @@
+Ad-hoc venue photos. File-naming convention: <venue-slug>.jpg (or .png/.webp).
+Point venues.photo_url to /venue-photos/<slug>.jpg via scripts/set_photo.py --venue <slug> --local /venue-photos/<slug>.jpg
+proxyPhotoUrl() in src/lib/utils.ts passes non-Google URLs through unchanged, so this Just Works.

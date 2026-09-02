@@ -1,0 +1,21 @@
+# Railway deploy config for the FastAPI backend (chideals-production).
+#
+# data/chideals.db is NOT in the git repo (exceeds GitHub's 100 MiB cap), so the
+# DB is fetched from Cloudflare R2 before uvicorn starts. fetch_db_on_boot.py
+# exits non-zero on a missing/truncated/corrupt DB, which fails the start command
+# and makes Railway keep the previous good deploy.
+#
+# Requires these service variables on Railway (same R2 creds as the backups):
+#   BACKUP_S3_BUCKET, BACKUP_S3_ENDPOINT, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+# Optional: DB_BYTE_FLOOR (default 80 MiB), R2_LIVE_DB_KEY, R2_USER_WRITES_KEY,
+#           ADMIN_API_KEY (only needed if boot ever needs the export endpoint).
+
+[build]
+builder = "railpack"
+
+[deploy]
+startCommand = "python scripts/fetch_db_on_boot.py && uvicorn src.api.deals_api:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

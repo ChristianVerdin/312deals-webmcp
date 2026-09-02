@@ -1,0 +1,121 @@
+{
+  "$schema": "https://webmcp.org/schema/discovery/v1",
+  "_spec_note": "Anticipates .well-known/webmcp discovery standard. Dual API: Declarative (forms) + Imperative (JS). Updated for Feb 2026 Chrome blog spec.",
+
+  "name": "312Deals",
+  "description": "Chicago's best food & drink deals — {{deals}} deals at {{venues}} venues across {{neighborhoods}} neighborhoods. Happy hours, daily specials, brunch, late-night, chains, game day, seasonal offers. Verified weekly.",
+  "homepage": "https://www.312deals.com",
+  "icon": "https://www.312deals.com/favicon.ico",
+  "version": "1.4.0",
+  "last_updated": "2026-05-12",
+  "api_style": "declarative+imperative",
+
+  "coverage": {
+    "geographic": "Chicago IL metro — {{neighborhoods}} neighborhoods (Chicago city + suburbs)",
+    "venue_count": "{{venues}}",
+    "deal_count": "{{deals}}",
+    "update_frequency": "weekly"
+  },
+
+  "tools": [
+    {
+      "name": "search_chicago_deals",
+      "description": "Find food and drink deals across {{neighborhoods}} Chicago neighborhoods and suburbs. Covers happy hours, daily specials (taco tuesday, wing wednesday), brunch deals, late-night eats, chain app promotions (McDonald's, Chipotle, BWW), game day specials, and seasonal offers at {{venues}} verified venues.",
+      "endpoint": "/api/v1/deals/search",
+      "method": "GET",
+      "registration_type": "both",
+      "parameters": {
+        "neighborhood": { "type": "string", "examples": ["West Loop", "Roscoe Village", "Naperville"] },
+        "day": { "type": "string", "enum": ["monday","tuesday","wednesday","thursday","friday","saturday","sunday","today"] },
+        "deal_type": { "type": "string", "enum": ["happy_hour","daily_special","brunch_deal","late_night","chain_app_deal","game_day"] },
+        "cuisine": { "type": "string", "examples": ["mexican", "italian", "sushi", "pizza"] },
+        "query": { "type": "string", "examples": ["oysters", "bottomless mimosas", "half off wings"] }
+      }
+    },
+    {
+      "name": "deals_near_location",
+      "description": "Find active deals near a specific Chicago address right now. Geo-proximity search.",
+      "endpoint": "/api/v1/deals/nearby",
+      "method": "GET",
+      "registration_type": "both",
+      "parameters": {
+        "address": { "type": "string", "required": true },
+        "radius_miles": { "type": "number", "default": 0.5 },
+        "active_now": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "get_venue_deals",
+      "description": "Get all current deals for a specific Chicago venue by name or ID.",
+      "endpoint": "/api/v1/venues/search",
+      "method": "GET",
+      "registration_type": "both",
+      "parameters": {
+        "venue_name": { "type": "string", "examples": ["Big Star", "Au Cheval"] },
+        "venue_id": { "type": "integer" }
+      }
+    },
+    {
+      "name": "chicago_deal_of_the_day",
+      "description": "Get today's featured deal — the best value deal active right now.",
+      "endpoint": "/api/v1/deals/deal-of-the-day",
+      "method": "GET",
+      "registration_type": "imperative",
+      "parameters": {
+        "zone": { "type": "string", "enum": ["city","north_shore","northwest_suburbs","western_suburbs","south_suburbs"] }
+      }
+    },
+    {
+      "name": "chicago_chain_deals",
+      "description": "National chain deals in Chicago: McDonald's, Chipotle, BWW, Portillo's, etc.",
+      "endpoint": "/api/v1/deals/chains",
+      "method": "GET",
+      "registration_type": "imperative",
+      "parameters": {
+        "chain_name": { "type": "string", "examples": ["McDonalds", "Chipotle", "Buffalo Wild Wings"] },
+        "app_only": { "type": "boolean", "default": false }
+      }
+    },
+    {
+      "name": "chicago_neighborhood_deals_summary",
+      "description": "Neighborhood deal summary — venue count, deal count, top deals, cuisine breakdown.",
+      "endpoint": "/api/v1/neighborhoods/summary",
+      "method": "GET",
+      "registration_type": "imperative",
+      "parameters": {
+        "neighborhood": { "type": "string", "required": true, "examples": ["Wicker Park", "Lincoln Park"] }
+      }
+    },
+    {
+      "name": "plan_chicago_deal_crawl",
+      "description": "Plan a multi-stop deal crawl across Chicago venues. Optimizes route, timing, and savings.",
+      "endpoint": "/api/v1/deals/plan-crawl",
+      "method": "GET",
+      "registration_type": "imperative",
+      "parameters": {
+        "neighborhood": { "type": "string", "required": true },
+        "day": { "type": "string", "enum": ["monday","tuesday","wednesday","thursday","friday","saturday","sunday","today"] },
+        "budget": { "type": "number" },
+        "group_size": { "type": "integer", "default": 2 },
+        "max_stops": { "type": "integer", "default": 4 }
+      }
+    },
+    {
+      "name": "submit_chicago_deal",
+      "description": "Submit a new deal tip for verification. Uses human-in-the-loop confirmation.",
+      "endpoint": "/api/v1/submissions",
+      "method": "POST",
+      "registration_type": "both",
+      "parameters": {
+        "venue_name": { "type": "string", "required": true },
+        "deal_description": { "type": "string", "required": true },
+        "deal_type": { "type": "string", "enum": ["happy_hour","daily_special","brunch_deal","late_night","chain_app_deal","game_day","other"] }
+      }
+    }
+  ],
+
+  "legal": {
+    "terms_of_use": "https://www.312deals.com/terms",
+    "data_license": "Display permitted via agents; bulk copying or resale prohibited"
+  }
+}

@@ -1,0 +1,15 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.hoynelabs.deals312",
+      "sha256_cert_fingerprints": [
+        "50:73:6D:DE:BA:DB:56:A1:2E:E8:58:EE:F0:55:5E:E8:C8:2F:B2:8E:FF:67:F4:BD:47:73:61:E5:0F:B5:9E:6F",
+        "F9:82:D9:13:C8:60:16:5E:92:4A:4F:12:11:3F:E0:E0:78:C4:48:5A:8F:C0:AE:EF:B9:BB:FF:1C:93:03:08:F0",
+        "33:26:FD:4D:68:4A:02:92:6C:91:55:69:66:8F:78:6E:9B:A9:82:5F:44:55:9A:FC:1E:2C:F7:3D:06:20:B0:2D",
+        "DA:BA:65:B8:00:94:9B:90:24:AA:C3:97:86:4E:9F:09:A4:B5:C1:01:17:FC:D7:D5:DA:59:A9:AC:E3:8D:CF:2C"
+      ]
+    }
+  }
+]

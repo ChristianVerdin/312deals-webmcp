@@ -1,0 +1,517 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "312Deals Chicago API",
+    "description": "Search 80,000+ food and drink deals across 149 Chicagoland neighborhoods at 12,000+ venues. Covers happy hours, daily specials, brunch deals, late-night food, chain promotions, and bar crawl planning.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "312Deals",
+      "url": "https://www.312deals.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://chideals-production.up.railway.app",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/api/v1/deals/search": {
+      "get": {
+        "operationId": "searchDeals",
+        "summary": "Search Chicago food and drink deals",
+        "description": "Main search endpoint. Filter by neighborhood, day of week, deal type, cuisine, price range, time of day, and free text. Returns deals sorted by quality score. Use this for most user questions about deals.",
+        "parameters": [
+          {
+            "name": "neighborhood",
+            "in": "query",
+            "description": "Chicago neighborhood name or slug (e.g. 'West Loop', 'lincoln-park', 'Wicker Park')",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "description": "Day of week (monday-sunday) or 'today' for current day",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "deal_type",
+            "in": "query",
+            "description": "Deal category filter",
+            "schema": {
+              "type": "string",
+              "enum": ["happy_hour", "daily_special", "brunch_deal", "late_night", "chain_app_deal", "game_day", "seasonal_lto", "loyalty_reward", "event_driven", "new_opening", "restaurant_week", "group_package", "other"]
+            }
+          },
+          {
+            "name": "cuisine",
+            "in": "query",
+            "description": "Cuisine type (e.g. 'mexican', 'italian', 'japanese', 'american')",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Free-text search across deal titles, descriptions, items, and venue names (e.g. 'tacos', 'half off wings', 'margaritas')",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "active_now",
+            "in": "query",
+            "description": "Set to true to only return deals happening right now",
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "chain_filter",
+            "in": "query",
+            "description": "'chain' for national chains only, 'local' for independent restaurants only",
+            "schema": { "type": "string", "enum": ["chain", "local"] }
+          },
+          {
+            "name": "price_range",
+            "in": "query",
+            "description": "Max deal price filter",
+            "schema": { "type": "string", "enum": ["under5", "under10", "under15", "under20"] }
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "description": "Minimum Google rating (1.0 to 5.0)",
+            "schema": { "type": "number", "minimum": 1.0, "maximum": 5.0 }
+          },
+          {
+            "name": "time_filter",
+            "in": "query",
+            "description": "Time window filter",
+            "schema": { "type": "string", "enum": ["lunch", "happy_hour", "dinner", "late_night"] }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max results to return (default 25, max 200)",
+            "schema": { "type": "integer", "default": 25, "minimum": 1, "maximum": 200 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset",
+            "schema": { "type": "integer", "default": 0, "minimum": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching deals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deals": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } },
+                    "count": { "type": "integer" },
+                    "filters": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deals/nearby": {
+      "get": {
+        "operationId": "findDealsNearby",
+        "summary": "Find deals near a location",
+        "description": "Geo-proximity search. Provide latitude and longitude to find deals within a radius. Results include distance_miles from the center point, sorted by distance.",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "description": "Latitude of search center",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "description": "Longitude of search center",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "radius_miles",
+            "in": "query",
+            "description": "Search radius in miles (default 1.5, max 25)",
+            "schema": { "type": "number", "default": 1.5, "minimum": 0.1, "maximum": 25.0 }
+          },
+          {
+            "name": "active_now",
+            "in": "query",
+            "description": "Only deals happening right now",
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 25, "minimum": 1, "maximum": 200 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deals near the location, sorted by distance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deals": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } },
+                    "count": { "type": "integer" },
+                    "center": { "type": "object" },
+                    "radius_miles": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deals/deal-of-the-day": {
+      "get": {
+        "operationId": "getDealOfTheDay",
+        "summary": "Get today's featured deal",
+        "description": "Returns the single best deal for today, selected by quality score. Great for a quick recommendation when users just want one good deal.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Today's top deal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deal": { "$ref": "#/components/schemas/Deal" },
+                    "day": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deals/chains": {
+      "get": {
+        "operationId": "getChainDeals",
+        "summary": "Get national chain deals in Chicago",
+        "description": "Returns deals from national chain restaurants (McDonald's, Chipotle, Portillo's, etc.). Filter by brand slug. Includes app download links when available.",
+        "parameters": [
+          {
+            "name": "brand",
+            "in": "query",
+            "description": "Chain brand slug (e.g. 'mcdonalds', 'chipotle', 'portillos')",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "app_only",
+            "in": "query",
+            "description": "Only app-exclusive deals",
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 25, "minimum": 1, "maximum": 200 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chain restaurant deals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deals": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deals/plan-crawl": {
+      "get": {
+        "operationId": "planBarCrawl",
+        "summary": "Plan a multi-stop bar crawl",
+        "description": "Generates a bar/restaurant crawl itinerary for a neighborhood. Considers budget, group size, time available, and food/drink preferences. Returns an ordered list of stops with estimated savings.",
+        "parameters": [
+          {
+            "name": "neighborhood",
+            "in": "query",
+            "required": true,
+            "description": "Starting neighborhood (e.g. 'West Loop', 'Logan Square', 'Wicker Park')",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "budget",
+            "in": "query",
+            "description": "Budget level",
+            "schema": { "type": "string", "enum": ["$", "$$", "$$$", "$$$$"] }
+          },
+          {
+            "name": "hours",
+            "in": "query",
+            "description": "Hours available for the crawl (default 3, max 8)",
+            "schema": { "type": "number", "default": 3.0, "minimum": 1.0, "maximum": 8.0 }
+          },
+          {
+            "name": "group_size",
+            "in": "query",
+            "description": "Number of people (default 2)",
+            "schema": { "type": "integer", "default": 2, "minimum": 1, "maximum": 20 }
+          },
+          {
+            "name": "preferences",
+            "in": "query",
+            "description": "Comma-separated preferences (e.g. 'cocktails, oysters, tacos')",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bar crawl itinerary with stops and estimated savings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "crawl": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } },
+                    "stops": { "type": "integer" },
+                    "neighborhood": { "type": "string" },
+                    "estimated_savings": { "type": "number" },
+                    "group_size": { "type": "integer" },
+                    "hours": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deals/world-cup": {
+      "get": {
+        "operationId": "getWorldCupDeals",
+        "summary": "Deals near Soldier Field for FIFA World Cup 2026",
+        "description": "Find food and drink deals near Soldier Field for FIFA World Cup 2026 match days (June 11 - July 19, 2026). Results sorted by distance from the stadium.",
+        "parameters": [
+          {
+            "name": "radius_miles",
+            "in": "query",
+            "description": "Search radius from Soldier Field (default 2, max 10)",
+            "schema": { "type": "number", "default": 2.0, "minimum": 0.5, "maximum": 10.0 }
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "description": "Day of week or 'today'",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "deal_type",
+            "in": "query",
+            "description": "Deal type filter",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "active_now",
+            "in": "query",
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 200 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deals near Soldier Field with distance and event info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deals": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } },
+                    "count": { "type": "integer" },
+                    "unique_venues": { "type": "integer" },
+                    "center": { "type": "object" },
+                    "radius_miles": { "type": "number" },
+                    "event": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/venues/{slug}": {
+      "get": {
+        "operationId": "getVenue",
+        "summary": "Get a venue and all its deals",
+        "description": "Look up a specific restaurant or bar by its URL slug. Returns full venue details (address, rating, cuisine, coordinates) plus all active deals. Use when a user asks about a specific place.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Venue URL slug (e.g. 'au-cheval', 'portillos-river-north', 'big-star')",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Venue with all active deals",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Venue" }
+              }
+            }
+          },
+          "404": {
+            "description": "Venue not found"
+          }
+        }
+      }
+    },
+    "/api/v1/neighborhoods": {
+      "get": {
+        "operationId": "listNeighborhoods",
+        "summary": "List Chicago neighborhoods with deal counts",
+        "description": "Returns all 149 Chicago neighborhoods with active deal count, venue count, and deals-active-now count. Use to help users pick a neighborhood or understand deal distribution across the city.",
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "description": "Filter by zone (e.g. 'city', 'north_shore')",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Neighborhoods with counts, sorted by deal count descending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "neighborhoods": { "type": "array", "items": { "$ref": "#/components/schemas/Neighborhood" } },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search/suggest": {
+      "get": {
+        "operationId": "autocompleteSuggest",
+        "summary": "Autocomplete search suggestions",
+        "description": "Returns matching neighborhoods, venues, and popular search terms for a query prefix. Use to clarify ambiguous user input before searching.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search prefix (e.g. 'west', 'taco', 'river')",
+            "schema": { "type": "string", "minLength": 1, "maxLength": 100 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max suggestions per category (default 5)",
+            "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 10 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching neighborhoods, venues, and search terms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "neighborhoods": { "type": "array", "items": { "type": "object" } },
+                    "venues": { "type": "array", "items": { "type": "object" } },
+                    "terms": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Deal": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "venue_name": { "type": "string", "description": "Restaurant or bar name" },
+          "venue_slug": { "type": "string", "description": "URL slug for the venue (use to build links: 312deals.com/venues/{slug})" },
+          "neighborhood": { "type": "string", "description": "Chicago neighborhood name" },
+          "deal_type": { "type": "string", "description": "Category: happy_hour, daily_special, brunch_deal, late_night, chain_app_deal, etc." },
+          "title": { "type": "string", "description": "Short deal headline" },
+          "description": { "type": "string", "description": "Full deal details" },
+          "days_available": { "type": "array", "items": { "type": "string" }, "description": "Days this deal runs (e.g. ['monday','tuesday','wednesday'])" },
+          "start_time": { "type": "string", "description": "Deal start time in HH:MM format" },
+          "end_time": { "type": "string", "description": "Deal end time in HH:MM format" },
+          "is_all_day": { "type": "boolean" },
+          "food_items": { "type": "array", "description": "Food items with deal_price and regular_price" },
+          "drink_items": { "type": "array", "description": "Drink items with deal_price and regular_price" },
+          "best_deal_item": { "type": "string", "description": "Headline deal item (e.g. '$1 oysters', '$5 margs')" },
+          "best_savings_pct": { "type": "number", "description": "Best percentage savings on any item" },
+          "quality_score": { "type": "integer", "description": "Quality score 1-100 (higher is better)" },
+          "is_verified": { "type": "boolean" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" },
+          "distance_miles": { "type": "number", "description": "Distance from search center (only in nearby/world-cup results)" }
+        }
+      },
+      "Venue": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "address": { "type": "string" },
+          "neighborhood": { "type": "string" },
+          "cuisine_type": { "type": "string" },
+          "google_rating": { "type": "number" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" },
+          "deals": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } }
+        }
+      },
+      "Neighborhood": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "zone": { "type": "string" },
+          "active_deal_count": { "type": "integer" },
+          "venue_count": { "type": "integer" },
+          "active_now_count": { "type": "integer" }
+        }
+      }
+    }
+  }
+}
