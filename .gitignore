@@ -1,0 +1,105 @@
+# Environment
+.env
+.env.local
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Claude Code session artifacts (never commit)
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# Database
+data/chideals.db
+data/chideals.db-wal
+data/chideals.db-shm
+data/.r2_db_etag
+data/weekly_report_*.json
+data/backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+package-lock.json
+.next/
+out/
+
+# Scraped data (large files)
+data/raw/
+data/exports/
+data/chideals-backup-*.db
+data/venues_full_export.csv
+
+# Temp images
+gemini-response.png
+gemini-state.png
+ios-*.png
+
+# Logs
+*.log
+logs/
+
+# Playwright
+playwright-report/
+tsconfig.tsbuildinfo
+
+# Xcode / iOS
+ios/ThreeOneTwoDeals.xcodeproj/
+ios/build/
+ios/DerivedData/
+*.xcuserdata
+*.xcworkspace
+.vercel
+.env*.local
+.agents/
+ios/
+
+# Apify exploration artifacts (Session 35)
+data/apify_*.json
+data/apify_*.db
+data/apify_*.db-shm
+data/apify_*.db-wal
+data/indexing_requests/
+/social/
+
+# Point-in-time revert artifacts written by the data-repair scripts
+# (dedupe_venue_slugs, fix_venue_city_from_address,
+# deactivate_concluded_event_deals, strip_boilerplate_descriptions).
+# Local convenience for a targeted --revert; the durable rollback is the
+# R2 live/history/ snapshot archived on every upload_db_to_r2 run.
+# ~10 MB and growing, so kept out of the repo like data/backups/.
+data/slug_dedupe/
+data/city_backfill/
+data/event_retirement/
+data/description_cleanup/
+data/title_cleanup/
+
+# personal / archives — never commit
+*.docx
+*.pdf
+*.zip
+*.tar.gz
+*.backup
+# sqlite side files
+*.db-shm
+*.db-wal
+*-shm
+*-wal
+
+# One-off targeting exports and retired-path probe output (Apify retired 2026-07-13)
+data/targets_*/
+data/apify_*.csv
+data/fb_events_probe*.json
+
+# Play Store intermediate renders (final assets are committed)
+assets/play-store/_previews/

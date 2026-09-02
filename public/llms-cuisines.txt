@@ -1,0 +1,42 @@
+# 312Deals — All Cuisine Hub Pages
+
+> Every cuisine category page (Italian, Mexican, Sushi, BBQ, etc.) with deals filtered to that cuisine. Auto-generated weekly.
+
+_Generated: 2026-09-01 · Site: https://www.312deals.com · 34 URLs · Source: https://www.312deals.com/sitemap.xml_
+
+## All
+
+- https://www.312deals.com/cuisine
+- https://www.312deals.com/cuisine/american
+- https://www.312deals.com/cuisine/asian
+- https://www.312deals.com/cuisine/bakery
+- https://www.312deals.com/cuisine/bbq
+- https://www.312deals.com/cuisine/breakfast
+- https://www.312deals.com/cuisine/burgers
+- https://www.312deals.com/cuisine/chinese
+- https://www.312deals.com/cuisine/cocktail-bar
+- https://www.312deals.com/cuisine/coffee
+- https://www.312deals.com/cuisine/deli
+- https://www.312deals.com/cuisine/french
+- https://www.312deals.com/cuisine/gastropub
+- https://www.312deals.com/cuisine/greek
+- https://www.312deals.com/cuisine/indian
+- https://www.312deals.com/cuisine/irish
+- https://www.312deals.com/cuisine/italian
+- https://www.312deals.com/cuisine/japanese
+- https://www.312deals.com/cuisine/korean
+- https://www.312deals.com/cuisine/mediterranean
+- https://www.312deals.com/cuisine/mexican
+- https://www.312deals.com/cuisine/middle-eastern
+- https://www.312deals.com/cuisine/pizza
+- https://www.312deals.com/cuisine/ramen
+- https://www.312deals.com/cuisine/seafood
+- https://www.312deals.com/cuisine/southern
+- https://www.312deals.com/cuisine/sports-bar
+- https://www.312deals.com/cuisine/steakhouse
+- https://www.312deals.com/cuisine/sushi
+- https://www.312deals.com/cuisine/tacos
+- https://www.312deals.com/cuisine/thai
+- https://www.312deals.com/cuisine/vietnamese
+- https://www.312deals.com/cuisine/wine-bar
+- https://www.312deals.com/cuisine/wings

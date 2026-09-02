@@ -1,0 +1,6 @@
+# Dev/test-only dependencies (NOT needed at runtime). Install into the venv:
+#   .venv/bin/python3 -m pip install -r requirements-dev.txt
+# Run the suite:
+#   .venv/bin/python3 -m pytest
+pytest>=8.0
+pytest-mock>=3.12

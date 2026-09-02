@@ -1,0 +1,40 @@
+# ChiDeals Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Core API framework
+anthropic>=0.40.0          # Claude API for deal extraction
+pydantic>=2.5.0            # Data validation
+fastapi>=0.115.0           # REST API
+uvicorn[standard]>=0.30.0  # ASGI server
+fastmcp>=0.5.0             # MCP server framework
+slowapi>=0.1.9             # Per-IP rate limiting
+
+# Web scraping
+httpx>=0.27.0              # HTTP client
+beautifulsoup4>=4.12.0     # HTML parsing
+lxml>=5.1.0                # Fast HTML parser
+playwright>=1.40.0         # JS-rendered pages (run: playwright install chromium)
+
+# Email
+resend>=2.0.0              # Transactional + marketing email via Resend
+agentmail>=0.2.0           # AgentMail SDK for newsletter inbox ingestion
+svix>=1.45.0               # Webhook signature verification (AgentMail uses Svix-signed webhooks)
+
+# AI — tiered strategy
+google-genai>=1.0.0        # Gemini Flash for pre-filtering, classification, verification (free tier)
+
+# Observability — env-gated LLM tracing for the AI-chat path (no-op unless LANGFUSE_ENABLED)
+langfuse>=3.7.0,<4                          # v3 OTel API (start_as_current_observation)
+opentelemetry-instrumentation-anthropic     # auto-captures Anthropic calls as generations
+
+# Utilities
+boto3>=1.34.0              # S3/R2 client — fetch live DB from R2 at boot, push snapshots back
+python-dotenv>=1.0.0       # .env file loading
+rich>=13.7.0               # Pretty CLI output
+tenacity>=8.2.0            # Retry logic with exponential backoff
+
+# Scheduling (for self-hosted cron pipeline)
+schedule>=1.2.0            # Simple cron alternative
+
+# Optional: data analysis
+# pandas>=2.1.0

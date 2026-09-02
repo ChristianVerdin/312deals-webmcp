@@ -1,0 +1,142 @@
+{
+  "_README": "ChiDeals MCP Server Configuration v5 — Dual API + --autoConnect + Soft Navigation",
+  "_last_updated": "2026-02-16",
+  "_changelog": "v5: Updated from Gemini fact-check (Feb 2026). Added --autoConnect to chrome-devtools setup. Documented Dual API (Declarative+Imperative). Added soft navigation notes. All package names verified against npm/GitHub.",
+
+  "mcpServers": {
+
+    "google-maps": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-google-maps"],
+      "env": { "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}" },
+      "_purpose": "PRIMARY: Venue discovery + enrichment. search_nearby, get_place_details, geocode, distance_matrix.",
+      "_cost": "$0 (covered by $200/mo free credit)"
+    },
+
+    "google-maps-code-assist": {
+      "command": "npx",
+      "args": ["-y", "@googlemaps/code-assist-mcp@latest"],
+      "_purpose": "RAG over Google Maps Platform docs for dev questions. No API key needed."
+    },
+
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--autoConnect"],
+      "_purpose": "Google's OFFICIAL Chrome DevTools MCP (v0.17.0, 26 tools). Use --autoConnect to attach to running Chrome instance (Chrome 144+, requires chrome://inspect/#remote-debugging). Use for scraping JS-heavy restaurant sites and WebMCP testing via evaluate_script.",
+      "_source": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "_npm": "https://npmjs.org/package/chrome-devtools-mcp",
+      "_tools_by_category": {
+        "input_automation_8": ["click", "drag", "fill", "fill_form", "handle_dialog", "hover", "press_key", "upload_file"],
+        "navigation_6": ["close_page", "list_pages", "navigate_page", "new_page", "select_page", "wait_for"],
+        "emulation_2": ["emulate", "resize_page"],
+        "performance_3": ["performance_analyze_insight", "performance_start_trace", "performance_stop_trace"],
+        "network_2": ["get_network_request", "list_network_requests"],
+        "debugging_5": ["evaluate_script", "get_console_message", "list_console_messages", "take_screenshot", "take_snapshot"]
+      },
+      "_key_flags": {
+        "--autoConnect / --auto-connect": "Attach to running Chrome (Chrome 144+). Both camelCase and kebab-case accepted. Requires chrome://inspect/#remote-debugging enabled.",
+        "--channel": "stable|canary|beta|dev — target a specific Chrome channel",
+        "--browser-url": "Connect via remote debugging port (e.g., http://127.0.0.1:9222). Needed for sandboxed/WSL environments.",
+        "--headless": "Run without UI (for CI/CD pipelines)",
+        "--isolated": "Use temporary user-data-dir, cleaned up on close"
+      },
+      "_autoConnect_note": "Both --autoConnect (camelCase) and --auto-connect (kebab-case) are accepted. Google's canonical examples use --autoConnect. This flag is ADDITIVE to --browser-url, not a replacement. Use --browser-url for WSL/sandboxed environments.",
+      "_requirements": "Node.js v20.19+, Chrome stable or newer",
+      "_cost": "$0 (Apache-2.0 open-source)"
+    },
+
+    "chrome-devtools-webmcp": {
+      "command": "npx",
+      "args": ["-y", "@mcp-b/chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"],
+      "_purpose": "MCP-B FORK with dedicated WebMCP tool discovery/execution. Adds list_webmcp_tools + call_webmcp_tool. Use for TESTING our WebMCP tools. Uses --browser-url for WSL compatibility.",
+      "_source": "https://github.com/WebMCP-org/chrome-devtools-quickstart",
+      "_npm": "https://www.npmjs.com/package/@mcp-b/chrome-devtools-mcp",
+      "_extra_tools": [
+        "list_webmcp_tools — Discover all navigator.modelContext tools registered on current page",
+        "call_webmcp_tool — Execute a WebMCP tool by name with params"
+      ],
+      "_architecture": "AI Client → @mcp-b/chrome-devtools-mcp → CDP → Website → @mcp-b/global → navigator.modelContext",
+      "_cost": "$0 (MIT open-source)"
+    },
+
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" },
+      "_purpose": "Web scraping + structured extraction. Restaurant sites, menu pages.",
+      "_cost": "$0 (500 free credits/mo)"
+    },
+
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/sqlite-mcp", "${CHIDEALS_DB_PATH}"],
+      "_purpose": "Direct database access — query/insert deals, analytics, WebMCP analytics table."
+    },
+
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/filesystem-mcp", "${CHIDEALS_PROJECT_ROOT}"],
+      "_purpose": "Read/write project files, scraper configs, seed data, exports."
+    },
+
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/github-mcp"],
+      "env": { "GITHUB_TOKEN": "${GITHUB_TOKEN}" },
+      "_purpose": "Repo management, issue tracking for stale deals."
+    },
+
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/brave-search-mcp"],
+      "env": { "BRAVE_API_KEY": "${BRAVE_API_KEY}" },
+      "_purpose": "Web search for new venue discovery, deal announcements.",
+      "_cost": "$0 (2,000 free queries/mo)"
+    }
+  },
+
+  "_quick_setup_commands": {
+    "claude_code_add_all": [
+      "claude mcp add chrome-devtools --scope user npx chrome-devtools-mcp@latest --autoConnect",
+      "claude mcp add chrome-devtools-webmcp npx @mcp-b/chrome-devtools-mcp@latest",
+      "claude mcp add google-maps -- npx -y @modelcontextprotocol/server-google-maps",
+      "claude mcp add google-maps-code-assist -- npx -y @googlemaps/code-assist-mcp@latest",
+      "claude mcp add firecrawl -- npx -y firecrawl-mcp",
+      "claude mcp add sqlite -- npx -y @anthropic/sqlite-mcp /path/to/chideals.db",
+      "claude mcp add brave-search -- npx -y @anthropic/brave-search-mcp"
+    ],
+    "verify": "claude mcp list"
+  },
+
+  "_webmcp_testing_workflow": {
+    "description": "How to test ChiDeals WebMCP tools using @mcp-b/chrome-devtools-mcp",
+    "prerequisite": "@mcp-b/global polyfill loaded on page (already in package.json). Chrome 146+ with WebMCP flag OR any Chrome with @mcp-b/global polyfill.",
+    "native_detection": "index.js checks for native navigator.modelContext first (Chrome 146+), then falls back to @mcp-b/global polyfill. See CLAUDE.md Section 8.",
+    "steps": [
+      "1. Start Chrome with remote debugging: chrome --remote-debugging-port=9222",
+      "2. Use chrome-devtools-webmcp server (@mcp-b/chrome-devtools-mcp)",
+      "3. navigate_page to http://localhost:3000",
+      "4. list_webmcp_tools → should show 8 tools",
+      "5. call_webmcp_tool('search_chicago_deals', {neighborhood: 'Roscoe Village', day: 'thursday'})",
+      "6. Verify structured JSON response",
+      "7. Check analytics: SELECT * FROM webmcp_analytics ORDER BY id DESC LIMIT 10"
+    ]
+  },
+
+  "_dual_api_note": {
+    "description": "Feb 2026 Chrome blog confirms two registration paths",
+    "declarative": "Form-based tools (search, nearby, venue, submit) get HTML attributes for agent discovery. Fast path — no JS needed for discovery.",
+    "imperative": "Complex tools (crawl planner, neighborhood summary) use navigator.modelContext.registerTool(). Full power — custom logic, multi-step handlers.",
+    "our_strategy": "4 tools get BOTH paths, 4 tools stay imperative-only. See webmcp_tools.js registrationType field."
+  },
+
+  "_monthly_cost_estimate": {
+    "google_maps_api": "$0 ($200/mo free credit)",
+    "firecrawl": "$0 (500 free credits)",
+    "brave_search": "$0 (2,000 free queries)",
+    "anthropic_api": "$5-20 (Claude Sonnet for extraction)",
+    "chrome_devtools_mcp": "$0 (Apache-2.0 open-source)",
+    "mcp_b_packages": "$0 (MIT open-source)",
+    "total_mvp": "$5-20/month"
+  }
+}

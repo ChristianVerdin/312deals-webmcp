@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 43 90% 43%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 13%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 199 90% 57%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 43 90% 43%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 28% 11%;
+    --foreground: 0 0% 95%;
+    --card: 240 25% 15%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 25% 15%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 43 90% 43%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 22% 20%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 240 22% 20%;
+    --muted-foreground: 230 10% 65%;
+    --accent: 199 90% 57%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 18% 24%;
+    --input: 240 18% 24%;
+    --ring: 43 90% 43%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* Ensure adequate touch targets on mobile */
+  @media (pointer: coarse) {
+    select {
+      min-height: 44px;
+    }
+  }
+
+  /* Better focus states for keyboard users */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+
+  /* Tabular numbers for prices and counts */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Balanced text wrapping on headings */
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  /* Faster taps — no 300ms delay, no double-tap zoom on interactive elements */
+  a, button, [role="button"], .deal-card {
+    touch-action: manipulation;
+  }
+}
+
+/* Performance: skip rendering off-screen deal cards */
+@layer utilities {
+  .deal-grid > * {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 220px;
+  }
+
+  /* Hide scrollbar but keep scroll behavior */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding for bottom nav on notch/dynamic island devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}

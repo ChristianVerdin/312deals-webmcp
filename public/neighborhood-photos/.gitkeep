@@ -1,0 +1,3 @@
+Ad-hoc neighborhood landing-page photos. File-naming convention: <neighborhood-slug>.jpg.
+Point neighborhoods.image_url to /neighborhood-photos/<slug>.jpg via scripts/set_photo.py --neighborhood <slug> --local /neighborhood-photos/<slug>.jpg
+The /api/v1/neighborhoods endpoint COALESCEs image_url over the top-venue-photo fallback.

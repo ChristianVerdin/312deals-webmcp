@@ -1,0 +1,923 @@
+# 312Deals, Complete AI Context & API Reference
+
+> Chicago's most comprehensive food & drink deals database.
+> {{deals}} verified deals · {{venues}} venues · {{neighborhoods}} neighborhoods · Updated weekly by AI.
+> No authentication required. All endpoints return JSON.
+
+---
+
+## Quick Start
+
+Three ways to get deal data:
+
+**1. REST API**, any HTTP client
+```
+curl "https://www.312deals.com/api/v1/deals/search?neighborhood=wicker-park&day=today&deal_type=happy_hour"
+```
+
+**2. MCP Server**, Claude Desktop, Cursor, any MCP client
+```
+claude mcp add chideals -- python -m src.mcp_server.chideals_mcp
+```
+
+**3. WebMCP**, browser-native AI agents
+```
+Discovery: https://www.312deals.com/.well-known/webmcp.json
+```
+
+---
+
+## Data Coverage
+
+### Deals ({{deals}} active)
+Every deal has structured data, not just "happy hour specials" but extracted prices, times, days, and items:
+- `title`, short headline ("Happy Hour - Everything $5")
+- `description`, full details
+- `days_available`, array of day names (["monday", "tuesday", ...])
+- `start_time` / `end_time`, HH:MM format ("14:00" / "17:00")
+- `food_items`, array of {name, deal_price, regular_price}
+- `drink_items`, array of {name, deal_price, regular_price}
+- `quality_score`, 0-100 based on data completeness
+- `is_verified`, verified by AI pipeline
+
+### Deal Types (13)
+`happy_hour` · `daily_special` · `brunch_deal` · `late_night` · `seasonal_lto` · `chain_app_deal` · `game_day` · `loyalty_reward` · `event_driven` · `new_opening` · `restaurant_week` · `group_package` · `other`
+
+### Venues ({{venues}})
+Each venue includes: name, address, coordinates, Google rating, review count, cuisine type, hours, phone, website, social links (Instagram, Facebook, Twitter, TikTok), photo URL, price level (1-4), description, tags, and reservation URLs (OpenTable/Resy when available).
+
+### Cuisine Categories (20)
+Mexican · Italian · American · Japanese · Chinese · Thai · Indian · Korean · Mediterranean · Sushi · Pizza · Seafood · BBQ · Greek · Vietnamese · French · Steakhouse · Tacos · Burgers · Wings
+
+### Neighborhoods ({{neighborhoods}})
+Chicago city neighborhoods + suburban areas ({{neighborhoods}} total). Each has: name, slug, zone, coordinates, deal count, venue count, active-now count.
+
+**Zones:** city, north_shore, northwest_suburbs, western_suburbs, south_suburbs
+
+**Top neighborhoods by deal count:** River North (400+), Lakeview (230+), The Loop (140+), West Loop (130+), Lincoln Park (120+), Wicker Park (100+)
+
+### Chain Brands (45)
+McDonald's, Chipotle, Starbucks, Portillo's, Buffalo Wild Wings, Chili's, Applebee's, Taco Bell, Wendy's, and more. Each includes iOS and Android app download URLs.
+
+---
+
+## REST API Reference
+
+All endpoints are under `https://www.312deals.com`, see the [OpenAPI spec](https://www.312deals.com/api/v1/openapi.json) for full schemas.
+
+No authentication. No API key. CORS enabled for browser requests. Rate limited (reasonable use).
+
+### Errors
+
+All errors return consistent JSON:
+```json
+{
+  "error": {
+    "code": 404,
+    "message": "Venue not found",
+    "path": "/api/v1/venues/nonexistent-slug"
+  }
+}
+```
+
+Common error codes: 400 (bad request), 404 (not found), 429 (rate limited), 500 (server error).
+
+---
+
+### GET /api/v1/deals/search
+
+Search deals across all Chicago neighborhoods. This is the primary endpoint, use it for most queries.
+
+**Parameters:**
+
+| Param | Type | Description | Example |
+|-------|------|-------------|---------|
+| neighborhood | string | Name or slug | "West Loop", "wicker-park" |
+| day | string | Day of week or "today" | "friday", "today" |
+| deal_type | string | Category filter | "happy_hour", "brunch_deal" |
+| cuisine | string | Cuisine type | "mexican", "sushi" |
+| q | string | Free-text search | "tacos", "half off wings" |
+| active_now | boolean | Currently active only | true |
+| price_range | string | Max price filter | "under5", "under10", "under15", "under20" |
+| min_rating | float | Minimum Google rating | 4.0 |
+| time_filter | string | Time window | "lunch", "happy_hour", "dinner", "late_night" |
+| chain_filter | string | Chain vs local | "chain", "local" |
+| limit | int | Results per page (max 200) | 25 |
+| offset | int | Pagination offset | 0 |
+
+**curl:**
+```bash
+curl "https://www.312deals.com/api/v1/deals/search?neighborhood=wicker-park&day=today&deal_type=happy_hour&limit=3"
+```
+
+**Python:**
+```python
+import requests
+
+response = requests.get("https://www.312deals.com/api/v1/deals/search", params={
+    "neighborhood": "wicker-park",
+    "day": "today",
+    "deal_type": "happy_hour",
+    "limit": 3
+})
+deals = response.json()["deals"]
+for deal in deals:
+    print(f"{deal['venue_name']}, {deal['title']}")
+    print(f"  {deal['start_time']}-{deal['end_time']}, quality: {deal['quality_score']}")
+    for item in (deal.get('drink_items') or []):
+        print(f"  ${item.get('deal_price', '?')} {item['name']}")
+```
+
+**TypeScript:**
+```typescript
+const res = await fetch(
+  "https://www.312deals.com/api/v1/deals/search?" +
+  new URLSearchParams({ neighborhood: "wicker-park", day: "today", deal_type: "happy_hour", limit: "3" })
+);
+const { deals, count } = await res.json();
+deals.forEach(deal => {
+  console.log(`${deal.venue_name}, ${deal.title} (${deal.start_time}-${deal.end_time})`);
+});
+```
+
+**Response:**
+```json
+{
+  "deals": [
+    {
+      "id": 80,
+      "venue_name": "Fatpour Tap Works - Wicker Park",
+      "venue_slug": "fatpour-tap-works-wicker-park",
+      "neighborhood": "Wicker Park",
+      "neighborhood_slug": "wicker-park",
+      "deal_type": "happy_hour",
+      "title": "Happy Hour",
+      "description": "$6 glasses of wine, 50% off pizzas, $10 pitchers of Michelob Ultra/Bud Light/Miller Lite. Mon-Fri 5-7pm.",
+      "days_available": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "start_time": "17:00",
+      "end_time": "19:00",
+      "is_all_day": false,
+      "food_items": [{"name": "Pizzas (50% off)"}],
+      "drink_items": [
+        {"name": "Glass of wine", "deal_price": 6.0},
+        {"name": "Pitcher (Michelob Ultra/Bud Light/Miller Lite)", "deal_price": 10.0}
+      ],
+      "quality_score": 85,
+      "is_verified": true,
+      "latitude": 41.9029889,
+      "longitude": -87.6776167,
+      "address": "2005 W Division St, Chicago, IL 60622",
+      "cuisine_type": "American,Sports Bar",
+      "google_rating": 4.2
+    }
+  ],
+  "count": 1,
+  "filters": {
+    "neighborhood": "wicker-park",
+    "day": "thursday",
+    "deal_type": "happy_hour"
+  }
+}
+```
+
+---
+
+### GET /api/v1/deals/nearby
+
+Find deals near a location by coordinates. Results sorted by distance.
+
+**Parameters:**
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| lat | float | yes | Latitude |
+| lng | float | yes | Longitude |
+| radius_miles | float | no | Search radius (default 1.5, max 25) |
+| active_now | boolean | no | Currently active only |
+| limit | int | no | Max results (default 25) |
+
+**curl:**
+```bash
+# Deals within 1 mile of the Bean / Millennium Park
+curl "https://www.312deals.com/api/v1/deals/nearby?lat=41.8827&lng=-87.6233&radius_miles=1&active_now=true"
+```
+
+**Python:**
+```python
+response = requests.get("https://www.312deals.com/api/v1/deals/nearby", params={
+    "lat": 41.8827,
+    "lng": -87.6233,
+    "radius_miles": 1,
+    "active_now": True
+})
+data = response.json()
+for deal in data["deals"]:
+    print(f"{deal['distance_miles']} mi, {deal['venue_name']}: {deal['title']}")
+```
+
+**Response:**
+```json
+{
+  "deals": [
+    {
+      "id": 28,
+      "venue_name": "RPM Italian",
+      "title": "Happy Hour - Everything $5",
+      "distance_miles": 0.42,
+      "...": "...same deal fields as search..."
+    }
+  ],
+  "count": 15,
+  "center": {"lat": 41.8827, "lng": -87.6233},
+  "radius_miles": 1.0
+}
+```
+
+Note: Each deal in nearby results includes `distance_miles`, the distance from the search center.
+
+---
+
+### GET /api/v1/deals/deal-of-the-day
+
+Returns today's single best deal, highest quality score among deals active today. No parameters needed.
+
+**curl:**
+```bash
+curl "https://www.312deals.com/api/v1/deals/deal-of-the-day"
+```
+
+**Response:**
+```json
+{
+  "deal": {
+    "id": 28,
+    "venue_name": "RPM Italian",
+    "venue_slug": "rpm-italian-river-north",
+    "neighborhood": "River North",
+    "deal_type": "happy_hour",
+    "title": "Happy Hour - Everything $5",
+    "description": "Antipasti, cocktails, draft beer and wine all $5 each. Short Rib Arancini, Fried Green Tomatoes, Prime Beef Meatballs. At the bar.",
+    "days_available": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    "start_time": "14:00",
+    "end_time": "17:00",
+    "food_items": [
+      {"name": "Short Rib Arancini", "deal_price": 5.0},
+      {"name": "Fried Green Tomatoes", "deal_price": 5.0},
+      {"name": "Prime Beef Meatballs", "deal_price": 5.0}
+    ],
+    "drink_items": [
+      {"name": "Cocktails", "deal_price": 5.0},
+      {"name": "Draft beer", "deal_price": 5.0},
+      {"name": "Wine", "deal_price": 5.0}
+    ],
+    "restrictions": "Bar seating only",
+    "quality_score": 95,
+    "is_verified": true
+  },
+  "day": "thursday"
+}
+```
+
+---
+
+### GET /api/v1/deals/chains
+
+National chain restaurant deals. Includes app download links when available.
+
+**Parameters:**
+
+| Param | Type | Description | Example |
+|-------|------|-------------|---------|
+| brand | string | Chain brand slug | "mcdonalds", "chipotle", "portillos" |
+| app_only | boolean | App-exclusive deals only | true |
+| limit | int | Max results | 25 |
+
+**curl:**
+```bash
+curl "https://www.312deals.com/api/v1/deals/chains?brand=mcdonalds&limit=3"
+```
+
+**Response:**
+```json
+{
+  "deals": [
+    {
+      "id": 2087,
+      "venue_name": "McDonald's - River North",
+      "venue_slug": "mcdonalds-river-north-river-north",
+      "deal_type": "chain_app_deal",
+      "title": "Free Large Fries with $1 Min Purchase",
+      "description": "Free large Fries with your first purchase of $1+ for first time app users. Every $1 you spend earns 100 points, redeemable for free food.",
+      "chain_name": "McDonald's",
+      "chain_slug": "mcdonalds",
+      "app_url_ios": "https://apps.apple.com/app/mcdonalds/id922103212",
+      "app_url_android": "https://play.google.com/store/apps/details?id=com.mcdonalds.app",
+      "quality_score": 60
+    }
+  ],
+  "count": 1
+}
+```
+
+---
+
+### GET /api/v1/deals/plan-crawl
+
+Generate a multi-stop bar crawl itinerary for a neighborhood. Returns ordered stops with deals and estimated savings.
+
+**Parameters:**
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| neighborhood | string | yes | Starting neighborhood |
+| budget | string | no | "$", "$$", "$$$", "$$$$" |
+| hours | float | no | Hours available (1-8, default 3) |
+| group_size | int | no | People (1-20, default 2) |
+| preferences | string | no | Comma-separated: "cocktails, oysters" |
+
+**curl:**
+```bash
+curl "https://www.312deals.com/api/v1/deals/plan-crawl?neighborhood=logan-square&hours=3&group_size=4&preferences=cocktails,tacos"
+```
+
+**Response:**
+```json
+{
+  "crawl": [
+    {"venue_name": "...", "title": "...", "...": "...deal fields..."},
+    {"venue_name": "...", "title": "...", "...": "...deal fields..."},
+    {"venue_name": "...", "title": "...", "...": "...deal fields..."}
+  ],
+  "stops": 3,
+  "neighborhood": "logan-square",
+  "estimated_savings": 48.00,
+  "group_size": 4,
+  "hours": 3.0
+}
+```
+
+---
+
+### GET /api/v1/deals/world-cup
+
+Deals near Soldier Field for FIFA World Cup 2026 (June 11 – July 19, 2026).
+
+**Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| radius_miles | float | Distance from Soldier Field (0.5-10, default 2) |
+| day | string | Day of week or "today" |
+| deal_type | string | Category filter |
+| active_now | boolean | Currently active only |
+| limit | int | Max results (default 50) |
+
+**curl:**
+```bash
+curl "https://www.312deals.com/api/v1/deals/world-cup?radius_miles=2&day=today"
+```
+
+---
+
+### GET /api/v1/venues/{slug}
+
+Get a single venue with full details and all active deals.
+
+**curl:**
+```bash
+curl "https://www.312deals.com/api/v1/venues/fatpour-tap-works-wicker-park"
+```
+
+**Response:**
+```json
+{
+  "id": 74,
+  "name": "Fatpour Tap Works - Wicker Park",
+  "slug": "fatpour-tap-works-wicker-park",
+  "address": "2005 W Division St, Chicago, IL 60622",
+  "neighborhood": "Wicker Park",
+  "cuisine_type": "American,Sports Bar",
+  "google_rating": 4.2,
+  "google_review_count": 1240,
+  "phone": "(773) 698-8940",
+  "website_url": "https://fatpourtapworks.com/wicker-park",
+  "instagram_handle": "fatpourtapworks",
+  "facebook_url": "https://www.facebook.com/Fatpourtapworks",
+  "twitter_url": "https://twitter.com/fatpourtapworks",
+  "price_level": 2,
+  "latitude": 41.9029889,
+  "longitude": -87.6776167,
+  "description": "Bi-level brewpub named for its 22-ounce pours, with a 200-plus beer list & a wide-ranging pub menu.",
+  "hours_json": ["Monday: 5:00 PM – 12:00 AM", "..."],
+  "photo_url": "https://...",
+  "menu_url": "https://fatpourtapworks.com/wicker-park/menu/",
+  "deals": [
+    {
+      "id": 80,
+      "deal_type": "happy_hour",
+      "title": "Happy Hour",
+      "description": "$6 glasses of wine, 50% off pizzas, $10 pitchers...",
+      "days_available": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "start_time": "17:00",
+      "end_time": "19:00",
+      "quality_score": 85
+    },
+    {
+      "id": 84,
+      "deal_type": "daily_special",
+      "title": "Thursday Specials - Tequila Night",
+      "description": "$5 tequila shots or tequila mixed drinks all night.",
+      "days_available": ["thursday"],
+      "start_time": "17:00",
+      "end_time": "23:30",
+      "quality_score": 85
+    }
+  ]
+}
+```
+
+Returns 404 if venue slug not found.
+
+---
+
+### GET /api/v1/venues/search
+
+Search venues by name, neighborhood, or cuisine.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| name | string | Venue name search (partial match) |
+| neighborhood | string | Neighborhood filter |
+| cuisine | string | Cuisine type filter |
+| limit | int | Max results |
+
+```bash
+curl "https://www.312deals.com/api/v1/venues/search?name=portillos&limit=5"
+```
+
+---
+
+### GET /api/v1/neighborhoods
+
+List all {{neighborhoods}} neighborhoods with deal counts, venue counts, and active-now counts. Sorted by deal count descending.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| zone | string | Filter: "city", "north_shore", "northwest_suburbs", "western_suburbs", "south_suburbs" |
+
+**curl:**
+```bash
+curl "https://www.312deals.com/api/v1/neighborhoods?zone=city"
+```
+
+**Response:**
+```json
+{
+  "neighborhoods": [
+    {
+      "id": 17,
+      "name": "River North",
+      "slug": "river-north",
+      "zone": "city",
+      "latitude": 41.8918,
+      "longitude": -87.6328,
+      "active_deal_count": 411,
+      "venue_count": 426,
+      "active_now_count": 10
+    },
+    {
+      "id": 8,
+      "name": "Lakeview",
+      "slug": "lakeview",
+      "zone": "city",
+      "active_deal_count": 232,
+      "venue_count": 391,
+      "active_now_count": 10
+    }
+  ],
+  "count": 56
+}
+```
+
+---
+
+### GET /api/v1/neighborhoods/summary
+
+Per-neighborhood statistics: venue count, deal count, deal types, average quality, average savings.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| neighborhood | string | Specific neighborhood (omit for all) |
+
+```bash
+curl "https://www.312deals.com/api/v1/neighborhoods/summary?neighborhood=west-loop"
+```
+
+---
+
+### GET /api/v1/search/suggest
+
+Autocomplete suggestions for search queries. Returns matching neighborhoods, venues, and popular terms.
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| q | string | yes | Search prefix (min 1 char) |
+| limit | int | no | Max suggestions per category (default 5) |
+
+```bash
+curl "https://www.312deals.com/api/v1/search/suggest?q=taco&limit=5"
+```
+
+---
+
+### POST /api/v1/submissions
+
+Submit a deal tip for review.
+
+**Body (JSON):**
+```json
+{
+  "venue_name": "Joe's Bar & Grill",
+  "deal_description": "$1 oysters Mon-Thu 4-6pm",
+  "venue_address": "940 W Weed St, Chicago, IL 60642",
+  "deal_type": "happy_hour",
+  "days": "monday,tuesday,wednesday,thursday",
+  "times": "4pm-6pm",
+  "source_url": "https://joesbar.com/specials"
+}
+```
+
+**Response:**
+```json
+{
+  "id": 42,
+  "status": "pending",
+  "message": "Deal tip submitted for review"
+}
+```
+
+---
+
+### POST /api/v1/deals/{deal_id}/report
+
+Report a deal as outdated or confirm it's still active.
+
+**Body (JSON):**
+```json
+{
+  "action": "report_outdated",
+  "reason": "No longer listed on their website"
+}
+```
+
+Actions: `report_outdated`, `confirm_active`
+
+---
+
+## Response Schemas
+
+### Deal Object
+
+```typescript
+interface Deal {
+  id: number;
+  venue_name: string;
+  venue_slug: string;              // URL slug: "fatpour-tap-works-wicker-park"
+  neighborhood: string;
+  neighborhood_slug: string;
+  deal_type: string;               // "happy_hour" | "daily_special" | "brunch_deal" | ...
+  title: string;                   // Short headline
+  description: string | null;      // Full details
+  days_available: string[];        // ["monday", "tuesday", ...]
+  start_time: string | null;       // "17:00" (HH:MM)
+  end_time: string | null;         // "19:00" (HH:MM)
+  is_all_day: boolean;
+  food_items: FoodItem[];          // Extracted food with prices
+  drink_items: DrinkItem[];        // Extracted drinks with prices
+  best_deal_item: string | null;   // Headline item: "$1 oysters"
+  best_savings_pct: number | null; // Best savings percentage
+  restrictions: string | null;     // "Bar seating only", "Dine-in only"
+  quality_score: number;           // 0-100 (higher = better data quality)
+  is_verified: boolean;            // Verified by AI pipeline
+  latitude: number;
+  longitude: number;
+  address: string;
+  cuisine_type: string;
+  google_rating: number;
+  distance_miles?: number;         // Only in nearby/world-cup results
+}
+
+interface FoodItem {
+  name: string;                    // "Short Rib Arancini"
+  deal_price?: number;             // 5.0
+  regular_price?: number;          // 14.0
+}
+
+interface DrinkItem {
+  name: string;                    // "House Margarita"
+  deal_price?: number;             // 5.0
+  regular_price?: number;          // 12.0
+}
+```
+
+### Venue Object
+
+```typescript
+interface Venue {
+  id: number;
+  name: string;
+  slug: string;
+  address: string;
+  neighborhood: string;
+  cuisine_type: string;
+  google_rating: number;
+  google_review_count: number;
+  price_level: number;             // 1-4
+  latitude: number;
+  longitude: number;
+  phone: string | null;
+  website_url: string | null;
+  instagram_handle: string | null;
+  facebook_url: string | null;
+  twitter_url: string | null;
+  tiktok_handle: string | null;
+  description: string | null;
+  photo_url: string | null;
+  menu_url: string | null;
+  hours_json: string[];            // ["Monday: 5:00 PM – 12:00 AM", ...]
+  opentable_url: string | null;
+  resy_url: string | null;
+  is_chain: boolean;
+  deals: Deal[];                   // All active deals for this venue
+}
+```
+
+### Neighborhood Object
+
+```typescript
+interface Neighborhood {
+  id: number;
+  name: string;                    // "River North"
+  slug: string;                    // "river-north"
+  zone: string;                    // "city" | "north_shore" | "northwest_suburbs" | ...
+  latitude: number;
+  longitude: number;
+  active_deal_count: number;
+  venue_count: number;
+  active_now_count: number;
+}
+```
+
+---
+
+## Recipes & Use Cases
+
+### Find happy hours in a specific neighborhood
+
+```bash
+curl "https://www.312deals.com/api/v1/deals/search?neighborhood=west-loop&day=today&deal_type=happy_hour"
+```
+
+### Find deals happening right now near me
+
+```python
+import requests
+from datetime import datetime
+
+response = requests.get("https://www.312deals.com/api/v1/deals/nearby", params={
+    "lat": 41.8827,  # your latitude
+    "lng": -87.6233, # your longitude
+    "radius_miles": 0.5,
+    "active_now": True
+})
+
+for deal in response.json()["deals"]:
+    print(f"📍 {deal['distance_miles']} mi, {deal['venue_name']}")
+    print(f"   {deal['title']} ({deal['start_time']}-{deal['end_time']})")
+```
+
+### Get the best deal happening right now (via search)
+
+```bash
+# Deals active right now, sorted by quality score (highest first)
+curl "https://www.312deals.com/api/v1/deals/search?active_now=true&limit=1"
+```
+
+### Find all $5-or-under deals
+
+```bash
+curl "https://www.312deals.com/api/v1/deals/search?price_range=under_5&day=today"
+```
+
+### Plan a bar crawl with preferences
+
+```python
+response = requests.get("https://www.312deals.com/api/v1/deals/plan-crawl", params={
+    "neighborhood": "wicker-park",
+    "hours": 4,
+    "group_size": 6,
+    "budget": "$$",
+    "preferences": "cocktails, tacos, live music"
+})
+
+crawl = response.json()
+print(f"🍺 {crawl['stops']} stops, est. savings: ${crawl['estimated_savings']}")
+for i, stop in enumerate(crawl["crawl"], 1):
+    print(f"  Stop {i}: {stop['venue_name']}, {stop['title']}")
+```
+
+### Compare two neighborhoods
+
+```bash
+# Use the neighborhoods endpoint to compare deal counts
+curl "https://www.312deals.com/api/v1/neighborhoods/summary?neighborhood=west-loop"
+curl "https://www.312deals.com/api/v1/neighborhoods/summary?neighborhood=wicker-park"
+```
+
+### Search for specific foods or drinks
+
+```bash
+# Find oyster deals
+curl "https://www.312deals.com/api/v1/deals/search?q=oysters&day=today"
+
+# Find bottomless brunch
+curl "https://www.312deals.com/api/v1/deals/search?q=bottomless&deal_type=brunch_deal"
+
+# Find wing night specials
+curl "https://www.312deals.com/api/v1/deals/search?q=wings&day=wednesday"
+```
+
+### Get all chain deals with app links
+
+```python
+response = requests.get("https://www.312deals.com/api/v1/deals/chains", params={
+    "app_only": True,
+    "limit": 50
+})
+
+for deal in response.json()["deals"]:
+    print(f"{deal['chain_name']}: {deal['title']}")
+    if deal.get("app_url_ios"):
+        print(f"  iOS: {deal['app_url_ios']}")
+    if deal.get("app_url_android"):
+        print(f"  Android: {deal['app_url_android']}")
+```
+
+### Build venue links
+
+Venue pages follow this pattern: `https://www.312deals.com/venues/{venue_slug}`
+Neighborhood pages: `https://www.312deals.com/happy-hours/{neighborhood_slug}`
+
+```python
+# Generate a venue link from search results
+deal = deals[0]
+venue_url = f"https://www.312deals.com/venues/{deal['venue_slug']}"
+neighborhood_url = f"https://www.312deals.com/happy-hours/{deal['neighborhood_slug']}"
+```
+
+---
+
+## MCP Server
+
+The 312Deals MCP server exposes 11 tools for Claude Desktop, Cursor, and any MCP-compatible client.
+
+### Installation
+
+**Claude Desktop / Claude Code:**
+```bash
+claude mcp add chideals -- python -m src.mcp_server.chideals_mcp
+```
+
+**From source:**
+```bash
+git clone https://github.com/ChristianVerdin/chideals.git
+cd chideals
+pip install fastmcp
+python -m src.mcp_server.chideals_mcp
+```
+
+**Environment variables:**
+- `CHIDEALS_DB_PATH`, path to SQLite database (default: `data/chideals.db`)
+
+### Tools
+
+| Tool | Description |
+|------|-------------|
+| `search_chicago_deals` | Search deals by neighborhood, day, type, cuisine, keyword |
+| `deals_near_location` | Geo-proximity search by lat/lng coordinates |
+| `get_venue_details` | Get a venue by name or ID with all deals |
+| `get_chicago_neighborhoods` | List neighborhoods with deal counts |
+| `chicago_deal_of_the_day` | Today's best deal (no params) |
+| `chicago_chain_deals` | Chain restaurant deals with app links |
+| `plan_chicago_deal_crawl` | Multi-stop bar crawl planner |
+| `submit_deal_tip` | Submit a new deal for review |
+| `find_best_deal_now` | Best deal active right now (time-aware) |
+| `compare_neighborhoods` | Side-by-side neighborhood comparison (2-3) |
+| `weekly_deals_digest` | Curated weekly summary with top picks and stats |
+
+### Tool Details
+
+**search_chicago_deals**(neighborhood?, day?, deal_type?, cuisine?, query?, limit?)
+Most versatile tool. All parameters optional. Returns deals sorted by quality score.
+
+**deals_near_location**(address?, lat?, lng?, radius_miles?, active_now?)
+Requires lat/lng. If you only have an address, geocode it first, then pass coordinates.
+
+**get_venue_details**(venue_name?, venue_id?)
+Partial name match supported. Returns the best match by Google rating.
+
+**get_chicago_neighborhoods**(zone?)
+Zone filter: "city", "north_shore", "northwest_suburbs", "western_suburbs", "south_suburbs"
+
+**find_best_deal_now**(category?, zone?)
+Category: "food", "drinks", "both". Returns best deal + 3 alternatives.
+
+**compare_neighborhoods**(neighborhoods)
+Pass comma-separated: "West Loop, Wicker Park, Lincoln Park". Returns deal counts, types, top venues for each.
+
+**weekly_deals_digest**()
+No params. Returns: top_picks (5), todays_deals (5), best_savings (5), plus overall stats.
+
+---
+
+## WebMCP (Browser-Native AI Tools)
+
+312Deals registers 8 tools via the Chrome `navigator.modelContext` API for browser-based AI agents.
+
+**Discovery manifest:** `https://www.312deals.com/.well-known/webmcp.json`
+
+**Tools:** search_chicago_deals, deals_near_location, get_venue_deals, chicago_deal_of_the_day, chicago_chain_deals, chicago_neighborhood_deals_summary, plan_chicago_deal_crawl, submit_chicago_deal
+
+**Detection headers on all responses:**
+- `X-WebMCP-Available: true`
+- `X-WebMCP-Tools: 8`
+- `X-WebMCP-Discovery: /.well-known/webmcp.json`
+
+**Agent request headers (optional):**
+- `X-Agent-Invoked: true`, identifies request as agent-originated
+- `X-WebMCP-Agent: YourAgentName`, agent identification
+
+---
+
+## Data Freshness
+
+- Deals scraped from restaurant websites using Claude API for structured extraction
+- AI verification pipeline runs weekly (Mondays, 6 AM CT)
+- Content hashing detects changes, deals are re-verified when source HTML changes
+- Community verification: users can report outdated deals or confirm active ones via API
+- Quality score (0-100) reflects data completeness: deals with specific prices, times, items, and verification score higher
+- Venue metadata enriched from Google Places (ratings, hours, photos, coordinates)
+
+## Frequently Asked Questions
+
+**What is 312Deals?**
+312Deals is the most comprehensive free database of food and drink deals in Chicago and the suburbs. It tracks {{deals}} verified deals at {{venues}} venues across {{neighborhoods}} neighborhoods, covering happy hours, daily specials, brunch deals, late-night offers, chain app deals, and more. Updated weekly.
+
+**How many deals does 312Deals have?**
+As of May 2026, 312Deals has {{deals}} active deals across {{venues}} venues in {{neighborhoods}} Chicagoland neighborhoods (Chicago city + suburbs). Deal types include happy hours, daily specials, brunch deals, late night, chain app deals, and seasonal/limited-time offers.
+
+**What neighborhoods does 312Deals cover?**
+312Deals covers {{neighborhoods}} neighborhoods, Chicago city neighborhoods (River North, Wicker Park, Logan Square, Lincoln Park, West Loop, Lakeview, Pilsen, Hyde Park, Old Town, Bucktown, and more) plus suburban areas (Evanston, Oak Park, Naperville, Schaumburg, Arlington Heights, Oak Lawn, Tinley Park, Orland Park, Downers Grove, Wilmette, Lake Forest, Highland Park, and more).
+
+**Is the 312Deals API free?**
+Yes. All 18 REST API endpoints are free, require no authentication, and return JSON. No API key needed. The MCP server is also free to use.
+
+**What cuisines does 312Deals cover?**
+20 cuisine categories: Mexican, Italian, American, Japanese, Chinese, Thai, Indian, Korean, Mediterranean, Sushi, Pizza, Seafood, BBQ, Greek, Vietnamese, French, Steakhouse, Tacos, Burgers, Wings.
+
+**What chain restaurants does 312Deals track?**
+51 chain brands including McDonald's, Chipotle, Portillo's, Taco Bell, Wendy's, Chili's, Buffalo Wild Wings, Applebee's, and more, with app-only deals, loyalty rewards, and promotional offers.
+
+## Questions This API Can Answer
+
+- "What are the best happy hours in Wicker Park?"
+- "Find cheap drinks near Soldier Field"
+- "What brunch deals are available on Sunday in Lincoln Park?"
+- "Where can I get $1 oysters in Chicago?"
+- "What bars in River North have deals right now?"
+- "Plan a bar crawl through Logan Square for 4 people"
+- "What are the best late-night food deals in The Loop?"
+- "Which Chicago restaurants have half-off appetizers?"
+- "What happy hours are near Wrigley Field?"
+- "Find daily specials in West Loop this Wednesday"
+- "What are the cheapest eats near UChicago?"
+- "Best taco Tuesday deals in Chicago"
+- "Chicago wing night specials"
+- "Game day drink specials near United Center"
+- "What McDonald's deals are available in the app right now?"
+- "Compare deal scenes in Lincoln Park vs Wicker Park"
+- "What's the single best deal happening in Chicago right now?"
+
+## Links
+
+- Website: https://www.312deals.com
+- Search: https://www.312deals.com/search
+- OpenAPI Spec: https://www.312deals.com/api/v1/openapi.json
+- CustomGPT Spec: https://www.312deals.com/openapi-gpt.json
+- API Health: https://www.312deals.com/api/v1/health
+- Submit a Deal: https://www.312deals.com/submit
+- Agent Skill: https://www.312deals.com/skill.md
+- MCP Manifest: https://www.312deals.com/.well-known/mcp.json
+- WebMCP Manifest: https://www.312deals.com/.well-known/webmcp.json
+- Page Index (full): https://www.312deals.com/llms-index.txt
+- Citation Policy: https://www.312deals.com/ai.txt
