@@ -14,12 +14,14 @@ Open the site in ChatGPT's desktop browser (or Chrome 149+ with WebMCP enabled) 
 
 What was hard before: a person can't rank 80,000 time-windowed deals; an agent shouldn't decide where you drink. The shared plan splits the work — the agent optimizes against live inventory, the person keeps taste and veto — on one surface both can see.
 
-Try it (in ChatGPT's browser, on the live site):
+Try it (in ChatGPT's desktop browser, on the live site). Say "using this site's tools" — a bare question can send the model to general web search instead of the page's tools:
 
-1. "Find a happy hour in West Loop tonight."
-2. "Plan a 3-stop crawl in Wicker Park under $40 a person starting at 6."
-3. Lock stop 1 in the Tonight panel, then: "Reorder the rest by deal windows."
-4. "Get me the reservation link for stop 2."
+1. "Using this site's tools, find me a happy hour in West Loop tonight."
+2. "Using this site's tools, find three happy hours in Wicker Park on tonight and add them to my Tonight plan in the order I should visit them, starting at 6." — stops land in the Tonight panel marked *agent*.
+3. Lock stop 1 in the panel, then: "Using the site tools, reorder my Tonight plan by deal windows." — the locked stop stays put.
+4. "Using the site tools, remove stop 1 from my Tonight plan." — refused; only the padlock in the panel unlocks it.
+5. Click the Moon icon on any deal card to add a stop yourself, then: "Using the site tools, get me the reservation link for Big Star tonight at 6pm for 4." — OpenTable opens on that date, time, and party size.
+6. Address-bar arrow → "Recently used" lists every tool call the browser made.
 
 ## How WebMCP is implemented
 
