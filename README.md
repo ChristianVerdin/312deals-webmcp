@@ -44,6 +44,10 @@ Try it (in ChatGPT's desktop browser, on the live site). Say "using this site's 
 
 Both challenge commits were deployed to production at www.312deals.com on Sep 3, 2026.
 
+## What is not in this repo
+
+The deal-collection pipeline (scrapers, extraction prompts, verification) and the database are deliberately excluded — the web app and its tools talk to the live API, which is what judges and agents use. One consequence: the newsletter-ingestion webhook in `src/api/deals_api.py` imports the extractor lazily and will not run here; every other endpoint does.
+
 ## Running it
 
 The web app is Next.js 14; the API is FastAPI. The deal corpus is not in this repo — the app talks to the live API, which is what judges and agents use.
