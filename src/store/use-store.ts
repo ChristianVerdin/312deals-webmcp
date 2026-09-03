@@ -150,7 +150,7 @@ export const useStore = create<StoreState>()(
         const stop = get().tonight.stops.find((s) => s.id === id)
         if (!stop) return { ok: false, reason: "No stop with that id." }
         if (stop.locked && !opts?.force) {
-          return { ok: false, reason: `${stop.venueName} is locked by the user. Ask them to unlock it before removing.` }
+          return { ok: false, reason: `${stop.venueName} is locked by the user. Do not unlock it yourself — only the person unlocks, by hand in the Tonight panel. Leave it in place, tell the user it is locked, and adjust the other stops instead.` }
         }
         set((state) => ({
           tonight: {
@@ -168,7 +168,7 @@ export const useStore = create<StoreState>()(
         const from = stops.findIndex((s) => s.id === id)
         if (from === -1) return { ok: false, reason: "No stop with that id." }
         if (stops[from].locked && !opts?.force) {
-          return { ok: false, reason: `${stops[from].venueName} is locked by the user and stays at stop ${from + 1}.` }
+          return { ok: false, reason: `${stops[from].venueName} is locked by the user and stays at stop ${from + 1}. Do not unlock it yourself — plan around it.` }
         }
         const [stop] = stops.splice(from, 1)
         const to = clampPosition(position, stops.length)
