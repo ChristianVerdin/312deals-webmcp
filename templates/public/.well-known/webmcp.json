@@ -138,8 +138,83 @@
         "deal_description": { "type": "string", "required": true },
         "deal_type": { "type": "string", "enum": ["happy_hour","daily_special","brunch_deal","late_night","chain_app_deal","game_day","other"] }
       }
+    },
+    {
+      "name": "tonight_get_plan",
+      "description": "Read the shared 'Tonight' plan on the page: ordered stops, which ones the user locked, and constraints. Call before changing the plan.",
+      "scope": "page-state",
+      "registration_type": "imperative",
+      "parameters": {}
+    },
+    {
+      "name": "tonight_set_constraints",
+      "description": "Set budget per person, start/end time, group size, max stops, and anchor neighborhood for tonight's plan.",
+      "scope": "page-state",
+      "read_only": false,
+      "registration_type": "imperative",
+      "parameters": {
+        "budget_per_person": { "type": "number" },
+        "start_time": { "type": "string" },
+        "end_time": { "type": "string" },
+        "group_size": { "type": "integer" },
+        "max_stops": { "type": "integer" },
+        "neighborhood": { "type": "string" }
+      }
+    },
+    {
+      "name": "tonight_add_stop",
+      "description": "Add a venue (and optionally a specific deal) to the user's Tonight plan at a 1-based position. Appears in the panel marked 'added by agent'.",
+      "scope": "page-state",
+      "read_only": false,
+      "registration_type": "imperative",
+      "parameters": {
+        "venue_name": { "type": "string" },
+        "venue_id": { "type": "integer" },
+        "deal_id": { "type": "integer" },
+        "position": { "type": "integer" },
+        "note": { "type": "string" }
+      }
+    },
+    {
+      "name": "tonight_remove_stop",
+      "description": "Remove a stop by id or number. Refuses if the user locked it.",
+      "scope": "page-state",
+      "read_only": false,
+      "registration_type": "imperative",
+      "parameters": { "stop": { "type": "string", "required": true } }
+    },
+    {
+      "name": "tonight_move_stop",
+      "description": "Move a stop to a new 1-based position. Locked stops cannot be moved or displaced.",
+      "scope": "page-state",
+      "read_only": false,
+      "registration_type": "imperative",
+      "parameters": { "stop": { "type": "string", "required": true }, "position": { "type": "integer", "required": true } }
+    },
+    {
+      "name": "tonight_order_by_deal_window",
+      "description": "Reorder unlocked stops so deal windows are visited in order (earliest-ending first, all-day last). Locked stops keep their slots.",
+      "scope": "page-state",
+      "read_only": false,
+      "registration_type": "imperative",
+      "parameters": {}
+    },
+    {
+      "name": "tonight_clear",
+      "description": "Clear the plan; keeps locked stops unless keep_locked is false.",
+      "scope": "page-state",
+      "read_only": false,
+      "registration_type": "imperative",
+      "parameters": { "keep_locked": { "type": "boolean", "default": true } }
     }
   ],
+
+  "collaboration": {
+    "surface": "Tonight panel (every page) — a shared plan the person and their agent edit together",
+    "person_can": ["add from any deal card", "reorder", "veto (remove)", "lock a stop so the agent must plan around it", "note"],
+    "agent_can": ["read the plan", "set constraints", "add/move/remove unlocked stops", "reorder by deal window", "clear unlocked stops"],
+    "rule": "Locked stops are constraints, not suggestions: agent mutations against them return a structured refusal."
+  },
 
   "legal": {
     "terms_of_use": "https://www.312deals.com/terms",

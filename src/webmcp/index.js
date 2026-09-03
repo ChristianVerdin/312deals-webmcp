@@ -36,6 +36,11 @@
  */
 
 import { TOOLS, CHIDEALS_CONTEXT, enhanceFormsForWebMCP, isAgentSubmission } from './webmcp_tools.js';
+import { TONIGHT_TOOLS } from './tonight_tools.js';
+
+// Data tools proxy the public API; Tonight tools act on the shared plan
+// rendered in the page — the part a person and their agent build together.
+const ALL_TOOLS = [...TOOLS, ...TONIGHT_TOOLS];
 import {
   wrapWithAnalytics, startAnalytics, stopAnalytics,
   trackRegistration, trackContextProvision, getAnalyticsSummary,
@@ -228,7 +233,7 @@ export async function init312DealsWebMCP(options = {}) {
   let registered = 0;
   const toolNames = [];
 
-  for (const tool of TOOLS) {
+  for (const tool of ALL_TOOLS) {
     try {
       const execute = analytics
         ? wrapWithAnalytics(tool.name, tool.execute)
@@ -278,7 +283,7 @@ export async function init312DealsWebMCP(options = {}) {
   _registeredTools = toolNames;
 
   if (debug) {
-    console.log(`[312Deals WebMCP] ${registered}/${TOOLS.length} tools registered. Source: ${detection.source}`);
+    console.log(`[312Deals WebMCP] ${registered}/${ALL_TOOLS.length} tools registered. Source: ${detection.source}`);
   }
 
   return { available: true, registered, tools: toolNames, detectionSource: detection.source, apiSurface: detection.surface };
@@ -351,6 +356,7 @@ export function getWebMCPStatus() {
 // ============================================================
 
 export { TOOLS, CHIDEALS_CONTEXT, isAgentSubmission, DECLARATIVE_ATTRS } from './webmcp_tools.js';
+export { TONIGHT_TOOLS } from './tonight_tools.js';
 export { useWebMCP } from './useWebMCP.js';
 export { wrapWithAnalytics, getAnalyticsSummary } from './webmcp_analytics.js';
 export { MockModelContext, validateToolSchema, runToolTests, generateReport } from './webmcp_inspector.js';
