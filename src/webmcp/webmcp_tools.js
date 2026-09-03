@@ -39,6 +39,62 @@ function mcpResponse(data) {
   return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
 }
 
+// Agent-facing result shaping. The REST payloads carry ~60 deal columns and
+// ~92 venue columns (a 20-result search is ~32 KB; one venue lookup ~117 KB),
+// most of it pipeline bookkeeping. Keep what a person would act on, link to
+// the page for the rest, and say how much was left out.
+const DEAL_FIELDS = [
+  'id', 'title', 'description', 'deal_type', 'days_available', 'start_time', 'end_time',
+  'is_all_day', 'best_deal_item', 'estimated_savings_per_person', 'best_savings_pct',
+  'restrictions', 'venue_id', 'venue_name', 'venue_slug', 'neighborhood', 'address',
+  'cuisine_type', 'price_level', 'google_rating', 'opentable_url', 'resy_url',
+  'is_verified', 'verified_at',
+];
+const VENUE_FIELDS = [
+  'id', 'name', 'slug', 'address', 'city', 'neighborhood', 'cuisine_type', 'price_level',
+  'google_rating', 'google_review_count', 'website_url', 'menu_url', 'online_order_url',
+  'opentable_url', 'resy_url', 'reservation_platform', 'phone', 'has_patio', 'is_sports_bar',
+];
+const MAX_VENUE_DEALS = 15;
+
+function pick(obj, fields) {
+  const out = {};
+  for (const f of fields) {
+    if (obj && obj[f] != null && obj[f] !== '') out[f] = obj[f];
+  }
+  return out;
+}
+
+function slimDeal(d) {
+  const s = pick(d, DEAL_FIELDS);
+  if (d?.venue_slug) s.url = `https://www.312deals.com/venues/${d.venue_slug}`;
+  return s;
+}
+
+function slimVenue(v) {
+  const s = pick(v, VENUE_FIELDS);
+  if (v?.slug) s.url = `https://www.312deals.com/venues/${v.slug}`;
+  if (Array.isArray(v?.deals)) {
+    s.deal_count = v.deals.length;
+    s.deals = v.deals.slice(0, MAX_VENUE_DEALS).map(slimDeal);
+    if (v.deals.length > MAX_VENUE_DEALS) s.deals_omitted = v.deals.length - MAX_VENUE_DEALS;
+  }
+  return s;
+}
+
+function slimDealList(data, limit) {
+  const deals = data?.deals || [];
+  const shown = deals.slice(0, limit).map(slimDeal);
+  const matched = data?.total ?? data?.count ?? deals.length;
+  const out = { showing: shown.length, matched, deals: shown };
+  if (shown.length === 0) {
+    out.note = 'No deals matched. Try a broader search: drop the day or deal_type filter, or use a nearby neighborhood.';
+  } else if (shown.length < matched) {
+    out.note = 'More deals matched than shown. Narrow by neighborhood, day, or deal_type, or raise limit (max 50).';
+  }
+  return out;
+}
+
 // ============================================================
 // 10 TOOL DEFINITIONS
 // ============================================================
@@ -53,7 +109,8 @@ export const TOOLS = [
       'Covers happy hours, daily specials (taco tuesday, wing wednesday), brunch deals, ' +
       'late-night eats, chain app promotions (McDonald\'s, Chipotle, BWW), game day specials, ' +
       `and seasonal offers at ${stats.venues} verified venues. Data verified weekly. ` +
-      'Returns deal title, venue, address, times, prices, and savings. ' +
+      'Returns deal title, venue, address, times, prices, savings, and a link to each venue page. ' +
+      'Use day="today" for tonight. ' +
       'Example: search for "half off wings" in "West Loop" on "thursday".',
     registrationType: 'both',
     inputSchema: {
@@ -68,9 +125,11 @@ export const TOOLS = [
       },
     },
     execute: async (params) => {
+      const limit = Math.min(Number(params.limit) || 20, 50);
       const q = new URLSearchParams();
       for (const [k, v] of Object.entries(params)) { if (v != null) q.set(k, String(v)); }
-      return mcpResponse(await apiFetch(`/api/v1/deals/search?${q}`));
+      q.set('limit', String(limit));
+      return mcpResponse(slimDealList(await apiFetch(`/api/v1/deals/search?${q}`), limit));
     },
   },
 
@@ -78,29 +137,34 @@ export const TOOLS = [
   {
     name: 'deals_near_location',
     description:
-      'Find active deals near a specific Chicago address right now. ' +
-      'Geo-proximity search within configurable radius. Returns deals sorted by distance. ' +
-      'Example: find deals near "333 N Michigan Ave" within 0.5 miles.',
+      'Find active deals near a Chicago address, landmark, or coordinates. ' +
+      'Geo-proximity search within a configurable radius. Returns deals sorted by distance. ' +
+      'Give either an address or lat/lng. Example: deals near "333 N Michigan Ave" within 0.5 miles.',
     registrationType: 'both',
     inputSchema: {
       type: 'object',
       properties: {
-        lat: { type: 'number', description: 'Latitude, e.g. 41.8827' },
+        address: { type: 'string', description: 'Street address or landmark, e.g. "333 N Michigan Ave" or "Wrigley Field" (use this OR lat/lng)' },
+        lat: { type: 'number', description: 'Latitude, e.g. 41.8827 (with lng, instead of address)' },
         lng: { type: 'number', description: 'Longitude, e.g. -87.6233' },
         radius_miles: { type: 'number', description: 'Search radius in miles (default: 1.5)', default: 1.5 },
         active_now: { type: 'boolean', description: 'Only deals active now (default: false)', default: false },
-        limit: { type: 'integer', description: 'Max results (default: 20)', default: 20 },
+        limit: { type: 'integer', description: 'Max results (default: 20, max: 50)', default: 20 },
       },
-      required: ['lat', 'lng'],
     },
     execute: async (params) => {
+      const hasCoords = params.lat != null && params.lng != null;
+      if (!params.address && !hasCoords) {
+        return mcpResponse({ error: 'Provide either an address or both lat and lng.' });
+      }
+      const limit = Math.min(Number(params.limit) || 20, 50);
       const q = new URLSearchParams();
-      q.set('lat', String(params.lat));
-      q.set('lng', String(params.lng));
+      if (params.address) q.set('address', params.address);
+      if (hasCoords) { q.set('lat', String(params.lat)); q.set('lng', String(params.lng)); }
       if (params.radius_miles) q.set('radius_miles', String(params.radius_miles));
       if (params.active_now !== undefined) q.set('active_now', String(params.active_now));
-      if (params.limit) q.set('limit', String(params.limit));
-      return mcpResponse(await apiFetch(`/api/v1/deals/nearby?${q}`));
+      q.set('limit', String(limit));
+      return mcpResponse(slimDealList(await apiFetch(`/api/v1/deals/nearby?${q}`), limit));
     },
   },
 
@@ -123,7 +187,13 @@ export const TOOLS = [
       const q = new URLSearchParams();
       if (params.venue_name) q.set('name', params.venue_name);
       if (params.venue_id) q.set('id', String(params.venue_id));
-      return mcpResponse(await apiFetch(`/api/v1/venues/search?${q}`));
+      const data = await apiFetch(`/api/v1/venues/search?${q}`);
+      const all = data.venues || [];
+      const venues = all.slice(0, 3).map(slimVenue);
+      const out = { matched: data.total_count ?? data.count ?? all.length, venues };
+      if (venues.length === 0) out.note = 'No venue matched that name. Try a shorter name or search_chicago_deals with query.';
+      else if (all.length > 3) out.note = 'Several venues matched; the closest name matches are shown. Pass venue_id to pin one.';
+      return mcpResponse(out);
     },
   },
 
@@ -293,9 +363,11 @@ export const TOOLS = [
   {
     name: 'submit_chicago_deal',
     description:
-      'Submit a new deal tip for verification. Requires venue name and deal description. ' +
-      'Example: "submit a deal for Big Star, $1 oysters Tuesday 4-6pm". Uses human-in-the-loop confirmation.',
+      'Submit a new deal tip to 312Deals for human verification (creates a moderated submission; ' +
+      'confirm the details with the user before calling). Requires venue name and deal description. ' +
+      'Example: "submit a deal for Big Star, $1 oysters Tuesday 4-6pm".',
     registrationType: 'both',
+    readOnly: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -343,10 +415,10 @@ export const TOOLS = [
 export const CHIDEALS_CONTEXT = {
   description:
     '312Deals, most comprehensive food/drink deals database in Chicago. ' +
-    `${stats.venues} venues, ${stats.neighborhoods} neighborhoods (52 city + 60+ active suburbs), ${stats.deals} deals. Verified weekly.`,
+    `${stats.venues} venues, ${stats.neighborhoods} neighborhoods (Chicago city + suburbs), ${stats.deals} deals. Verified weekly.`,
   capabilities: ['deal_search','geo_search','venue_lookup','daily_featured','chain_deals','neighborhood_summary','crawl_planning','order_links','reservation_links','community_submissions'],
   data_freshness: 'Weekly verification, last verified within 14 days',
-  coverage_area: `Chicago IL metro, ${stats.neighborhoods} neighborhoods (52 city + 60+ active suburban communities)`,
+  coverage_area: `Chicago IL metro, ${stats.neighborhoods} neighborhoods (Chicago city + suburban communities)`,
 };
 
 // ============================================================
@@ -381,18 +453,6 @@ const DECLARATIVE_FORMS = {
       cuisine: 'Cuisine: mexican, italian, sushi, etc.',
       query: 'Free-text: "oysters", "half off wings"',
     },
-  },
-  'deal-nearby-form': {
-    toolName: 'deals_near_location_form',
-    toolDescription: 'Find deals near a Chicago address',
-    autoSubmit: false,
-    params: { address: 'Street address or landmark', radius_miles: 'Radius in miles' },
-  },
-  'venue-search-form': {
-    toolName: 'get_venue_deals_form',
-    toolDescription: 'Look up deals for a specific venue',
-    autoSubmit: false,
-    params: { venue_name: 'Venue name, e.g. "Big Star"' },
   },
   'deal-submit-form': {
     toolName: 'submit_chicago_deal_form',

@@ -1,14 +1,15 @@
 {
   "$schema": "https://webmcp.org/schema/discovery/v1",
-  "_spec_note": "Anticipates .well-known/webmcp discovery standard. Dual API: Declarative (forms) + Imperative (JS). Updated for Feb 2026 Chrome blog spec.",
+  "_spec_note": "Informational catalog. Agents discover these tools in-page via document.modelContext.registerTool (W3C WebML CG draft; navigator.modelContext kept as fallback for Chrome 146-148 Canary). Dual API: Declarative (forms) + Imperative (JS).",
 
   "name": "312Deals",
   "description": "Chicago's best food & drink deals — 80,000+ deals at 12,000+ venues across 149 neighborhoods. Happy hours, daily specials, brunch, late-night, chains, game day, seasonal offers. Verified weekly.",
   "homepage": "https://www.312deals.com",
   "icon": "https://www.312deals.com/favicon.ico",
-  "version": "1.4.0",
-  "last_updated": "2026-05-12",
+  "version": "1.5.0",
+  "last_updated": "2026-09-03",
   "api_style": "declarative+imperative",
+  "api_surface": ["document.modelContext", "navigator.modelContext"],
 
   "coverage": {
     "geographic": "Chicago IL metro — 149 neighborhoods (Chicago city + suburbs)",
@@ -34,14 +35,17 @@
     },
     {
       "name": "deals_near_location",
-      "description": "Find active deals near a specific Chicago address right now. Geo-proximity search.",
+      "description": "Find active deals near a Chicago address, landmark, or coordinates. Geo-proximity search. Give either address or lat/lng.",
       "endpoint": "/api/v1/deals/nearby",
       "method": "GET",
       "registration_type": "both",
       "parameters": {
-        "address": { "type": "string", "required": true },
-        "radius_miles": { "type": "number", "default": 0.5 },
-        "active_now": { "type": "boolean", "default": true }
+        "address": { "type": "string", "examples": ["333 N Michigan Ave", "Wrigley Field"] },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "radius_miles": { "type": "number", "default": 1.5 },
+        "active_now": { "type": "boolean", "default": false },
+        "limit": { "type": "integer", "default": 20 }
       }
     },
     {
@@ -101,10 +105,33 @@
       }
     },
     {
+      "name": "get_order_link",
+      "description": "Direct online-ordering URL for a Chicago restaurant (venue's own ordering page when available, DoorDash search fallback).",
+      "endpoint": "/api/v1/venues/search",
+      "method": "GET",
+      "registration_type": "imperative",
+      "parameters": {
+        "venue_name": { "type": "string", "examples": ["The Region", "Beity"] },
+        "venue_id": { "type": "integer" }
+      }
+    },
+    {
+      "name": "get_reservation_link",
+      "description": "Reservation booking URL (OpenTable or Resy) for a Chicago restaurant, plus which platform is available.",
+      "endpoint": "/api/v1/venues/search",
+      "method": "GET",
+      "registration_type": "imperative",
+      "parameters": {
+        "venue_name": { "type": "string", "examples": ["Au Cheval", "Girl and the Goat"] },
+        "venue_id": { "type": "integer" }
+      }
+    },
+    {
       "name": "submit_chicago_deal",
-      "description": "Submit a new deal tip for verification. Uses human-in-the-loop confirmation.",
+      "description": "Submit a new deal tip for human verification (write action; the agent should confirm details with the user first).",
       "endpoint": "/api/v1/submissions",
       "method": "POST",
+      "read_only": false,
       "registration_type": "both",
       "parameters": {
         "venue_name": { "type": "string", "required": true },
