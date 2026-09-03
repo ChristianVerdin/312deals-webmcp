@@ -44,13 +44,13 @@ function minutes(t) {
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
-// The booking link carries the plan: the stop's own window start, else the
-// plan's start time, and the group size — so OpenTable/Resy open on the
-// right slot instead of their 7 PM-for-2 default.
+// The booking link carries the plan: the plan's start time (the person's
+// stated intent), else the stop's own window start, and the group size — so
+// OpenTable/Resy open on the right slot instead of their 7 PM-for-2 default.
 function stopReservation(s) {
   const { constraints } = useStore.getState().tonight;
   const link = reservationLink(s, {
-    time: s.startTime || constraints.startTime,
+    time: constraints.startTime || s.startTime,
     partySize: constraints.groupSize,
   });
   return link
