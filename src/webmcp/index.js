@@ -58,39 +58,46 @@ import {
  *   3. If neither, degrade gracefully
  */
 let _detectionSource = 'unknown';
+let _apiSurface = null; // 'document' | 'navigator' | null
+
+/**
+ * The spec moved the entry point from navigator.modelContext (Chrome 146–148
+ * Canary, Feb 2026) to document.modelContext (W3C WebML CG draft; ChatGPT
+ * desktop browser and Chrome 149+ implement this one). Prefer document, fall
+ * back to navigator, so both generations of agent browsers see the tools.
+ */
+export function getModelContext() {
+  if (typeof document !== 'undefined' && typeof document.modelContext?.registerTool === 'function') {
+    _apiSurface = 'document';
+    return document.modelContext;
+  }
+  if (typeof navigator !== 'undefined' && typeof navigator.modelContext?.registerTool === 'function') {
+    _apiSurface = 'navigator';
+    return navigator.modelContext;
+  }
+  _apiSurface = null;
+  return null;
+}
+
+export function getApiSurface() {
+  if (_apiSurface === null) getModelContext();
+  return _apiSurface;
+}
 
 export function detectWebMCP() {
-  if (typeof navigator === 'undefined') {
+  let mc = getModelContext();
+
+  // Polyfill (@mcp-b/global) may be loaded but not yet initialized
+  if (!mc && typeof window !== 'undefined' && window.__mcpbGlobalInit) {
+    try { window.__mcpbGlobalInit(); mc = getModelContext(); } catch (_) {}
+  }
+
+  if (!mc) {
     _detectionSource = 'unavailable';
-    return { available: false, source: 'unavailable' };
+    return { available: false, source: 'unavailable', surface: null };
   }
-
-  // Step 1: Check for native API (Chrome 146+ with flag or stable support)
-  if ('modelContext' in navigator && !navigator.modelContext?.__polyfill) {
-    _detectionSource = 'native';
-    return { available: true, source: 'native' };
-  }
-
-  // Step 2: Check for polyfill (@mcp-b/global sets navigator.modelContext)
-  // The polyfill may mark itself with __polyfill or __mcp_b_global
-  if ('modelContext' in navigator) {
-    _detectionSource = 'polyfill';
-    return { available: true, source: 'polyfill' };
-  }
-
-  // Step 3: Try to activate polyfill if loaded but not yet initialized
-  if (typeof window !== 'undefined' && window.__mcpbGlobalInit) {
-    try {
-      window.__mcpbGlobalInit();
-      if ('modelContext' in navigator) {
-        _detectionSource = 'polyfill';
-        return { available: true, source: 'polyfill' };
-      }
-    } catch (_) {}
-  }
-
-  _detectionSource = 'unavailable';
-  return { available: false, source: 'unavailable' };
+  _detectionSource = mc.__polyfill ? 'polyfill' : 'native';
+  return { available: true, source: _detectionSource, surface: _apiSurface };
 }
 
 /**
@@ -106,9 +113,9 @@ export async function detectWebMCPAsync() {
   if (typeof window !== 'undefined') {
     try {
       await import(/* webpackIgnore: true */ '@mcp-b/global');
-      if ('modelContext' in navigator) {
+      if (getModelContext()) {
         _detectionSource = 'polyfill';
-        return { available: true, source: 'polyfill' };
+        return { available: true, source: 'polyfill', surface: _apiSurface };
       }
     } catch (_) {
       // @mcp-b/global not installed or import failed
@@ -116,7 +123,7 @@ export async function detectWebMCPAsync() {
   }
 
   _detectionSource = 'unavailable';
-  return { available: false, source: 'unavailable' };
+  return { available: false, source: 'unavailable', surface: null };
 }
 
 /**
@@ -149,6 +156,7 @@ export function isWebMCPTestingAvailable() {
 let _initialized = false;
 let _registeredTools = [];
 let _softNavObserver = null;
+let _abortController = null;
 
 /**
  * Initialize all 312Deals WebMCP functionality.
@@ -188,17 +196,21 @@ export async function init312DealsWebMCP(options = {}) {
   if (!detection.available) {
     if (debug) {
       console.log(
-        '[312Deals WebMCP] navigator.modelContext not available.\n' +
-        '  Native: Requires Chrome 146+ with "WebMCP for testing" flag.\n' +
-        '  Polyfill: Install @mcp-b/global and import before this module.\n' +
+        '[312Deals WebMCP] modelContext not available on document or navigator.\n' +
+        '  ChatGPT desktop browser: supported out of the box.\n' +
+        '  Chrome 149+: enable chrome://flags/#enable-webmcp-testing or the origin trial.\n' +
         '  Tools will not be registered.'
       );
     }
-    return { available: false, registered: 0, tools: [], detectionSource: 'unavailable' };
+    return { available: false, registered: 0, tools: [], detectionSource: 'unavailable', apiSurface: null };
   }
 
+  const mc = getModelContext();
+  _abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const registerOptions = _abortController ? { signal: _abortController.signal } : undefined;
+
   if (debug) {
-    console.log(`[312Deals WebMCP] Initializing... (source: ${detection.source})`);
+    console.log(`[312Deals WebMCP] Initializing... (source: ${detection.source}, surface: ${detection.surface}.modelContext)`);
   }
 
   // Start analytics
@@ -222,12 +234,16 @@ export async function init312DealsWebMCP(options = {}) {
         ? wrapWithAnalytics(tool.name, tool.execute)
         : tool.execute;
 
-      navigator.modelContext.registerTool({
+      mc.registerTool({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
+        annotations: {
+          readOnlyHint: tool.readOnly !== false,
+          ...(tool.annotations || {}),
+        },
         execute: execute,
-      });
+      }, registerOptions);
 
       registered++;
       toolNames.push(tool.name);
@@ -265,7 +281,7 @@ export async function init312DealsWebMCP(options = {}) {
     console.log(`[312Deals WebMCP] ${registered}/${TOOLS.length} tools registered. Source: ${detection.source}`);
   }
 
-  return { available: true, registered, tools: toolNames, detectionSource: detection.source };
+  return { available: true, registered, tools: toolNames, detectionSource: detection.source, apiSurface: detection.surface };
 }
 
 // ============================================================
@@ -279,13 +295,19 @@ export async function init312DealsWebMCP(options = {}) {
 export function teardown312DealsWebMCP() {
   if (!isWebMCPAvailable() || !_initialized) return;
 
-  // Unregister tools
-  for (const name of _registeredTools) {
-    try { navigator.modelContext.unregisterTool(name); } catch (_) {}
+  // Current spec unregisters via the AbortSignal passed at registration;
+  // older Canary builds expose unregisterTool/clearContext. Do both.
+  if (_abortController) {
+    try { _abortController.abort(); } catch (_) {}
+    _abortController = null;
   }
-
-  // Clear context
-  try { navigator.modelContext.clearContext(); } catch (_) {}
+  const mc = getModelContext();
+  if (mc) {
+    for (const name of _registeredTools) {
+      try { mc.unregisterTool?.(name); } catch (_) {}
+    }
+    try { mc.clearContext?.(); } catch (_) {}
+  }
 
   // Stop soft navigation observer
   if (_softNavObserver) {
@@ -311,6 +333,7 @@ export function getWebMCPStatus() {
   return {
     available: isWebMCPAvailable(),
     detection_source: getDetectionSource(),
+    api_surface: getApiSurface(),
     testing_api_available: isWebMCPTestingAvailable(),
     initialized: _initialized,
     registered_tools: _registeredTools,

@@ -92,9 +92,9 @@ class WebMCPMiddleware(BaseHTTPMiddleware):
 
         # WebMCP headers
         response.headers['X-WebMCP-Available'] = 'true'
-        response.headers['X-WebMCP-Tools'] = '8'  # 8 tools registered
+        response.headers['X-WebMCP-Tools'] = '10'
         response.headers['X-WebMCP-Discovery'] = '/.well-known/webmcp.json'
-        response.headers['X-WebMCP-Spec'] = 'Feb-2026-Canary'  # Track spec version
+        response.headers['X-WebMCP-Spec'] = 'WebML-CG-2026;document.modelContext;navigator-fallback'
         response.headers['X-WebMCP-API'] = 'declarative+imperative'
 
         if request.state.is_agent_request:
