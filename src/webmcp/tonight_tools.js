@@ -1,4 +1,5 @@
 import { useStore } from '@/store/use-store';
+import { reservationLink } from '@/lib/reservation-link';
 import { toast } from 'sonner';
 
 /**
@@ -43,6 +44,20 @@ function minutes(t) {
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
+// The booking link carries the plan: the stop's own window start, else the
+// plan's start time, and the group size — so OpenTable/Resy open on the
+// right slot instead of their 7 PM-for-2 default.
+function stopReservation(s) {
+  const { constraints } = useStore.getState().tonight;
+  const link = reservationLink(s, {
+    time: s.startTime || constraints.startTime,
+    partySize: constraints.groupSize,
+  });
+  return link
+    ? { url: link.url, platform: link.platform, for: `${link.partySize} at ${link.time || 'venue default'} on ${link.date}` }
+    : null;
+}
+
 function publicStop(s, index) {
   return {
     stop: index + 1,
@@ -59,7 +74,7 @@ function publicStop(s, index) {
     added_by: s.addedBy,
     note: s.note,
     url: s.venueSlug ? `${SITE}/venues/${s.venueSlug}` : null,
-    reservation: s.resyUrl || s.opentableUrl || null,
+    reservation: stopReservation(s),
     order_online: s.onlineOrderUrl || null,
   };
 }

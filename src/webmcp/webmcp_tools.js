@@ -1,4 +1,5 @@
 import { stats } from '@/lib/product-stats';
+import { reservationLink } from '@/lib/reservation-link';
 
 /**
  * 312Deals WebMCP Tool Definitions
@@ -327,16 +328,18 @@ export const TOOLS = [
   {
     name: 'get_reservation_link',
     description:
-      'Get a reservation booking URL for a Chicago restaurant. ' +
-      'Returns OpenTable or Resy links when available. ' +
-      'Covers 300+ Chicago restaurants with reservation links. ' +
-      'Example: "reservation link for Au Cheval" or "book a table at Girl and the Goat".',
+      'Get a reservation booking URL for a Chicago restaurant (OpenTable or Resy), pre-filled with the ' +
+      'date, time, and party size you pass so the booking page opens on the right slot. ' +
+      'Example: "reservation link for Au Cheval at 6pm for 2" or "book a table at Girl and the Goat".',
     registrationType: 'imperative',
     inputSchema: {
       type: 'object',
       properties: {
         venue_name: { type: 'string', description: 'Venue name, e.g. "Au Cheval", "Girl and the Goat"' },
         venue_id: { type: 'integer', description: 'Venue database ID (alternative to name)' },
+        time: { type: 'string', description: 'Desired time, e.g. "18:00" or "6pm" (default: the venue page default)' },
+        date: { type: 'string', description: 'YYYY-MM-DD (default: today in Chicago)' },
+        party_size: { type: 'integer', description: 'Number of people (default: 2)', default: 2 },
       },
     },
     execute: async (params) => {
@@ -346,15 +349,17 @@ export const TOOLS = [
       const data = await apiFetch(`/api/v1/venues/search?${q}`);
       const venue = data.venues?.[0];
       if (!venue) return mcpResponse({ error: 'Venue not found', query: params });
+      const link = reservationLink(venue, { time: params.time, date: params.date, partySize: params.party_size });
       const result = {
         venue_name: venue.name,
         venue_slug: venue.slug,
         neighborhood: venue.neighborhood,
-        opentable_url: venue.opentable_url || null,
-        resy_url: venue.resy_url || null,
-        has_reservation: !!(venue.opentable_url || venue.resy_url),
-        reservation_platform: venue.opentable_url ? 'OpenTable' : venue.resy_url ? 'Resy' : null,
+        has_reservation: !!link,
+        reservation_platform: link?.platform || null,
+        reservation_url: link?.url || null,
+        reservation_for: link ? { date: link.date, time: link.time, party_size: link.partySize } : null,
       };
+      if (!link) result.note = 'No OpenTable or Resy link on file for this venue; use get_order_link or the venue website.';
       return mcpResponse(result);
     },
   },

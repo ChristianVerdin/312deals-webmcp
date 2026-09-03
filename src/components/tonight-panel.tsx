@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { ArrowDown, ArrowUp, Bot, ExternalLink, Lock, Unlock, Moon, Trash2, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useStore, type TonightStop } from "@/store/use-store"
+import { reservationLink } from "@/lib/reservation-link"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 
 function windowText(s: TonightStop) {
@@ -38,7 +39,12 @@ function StopRow({ stop, index, count }: { stop: TonightStop; index: number; cou
   const moveTonightStop = useStore((s) => s.moveTonightStop)
   const removeTonightStop = useStore((s) => s.removeTonightStop)
   const setTonightLocked = useStore((s) => s.setTonightLocked)
-  const reservation = stop.resyUrl || stop.opentableUrl
+  const constraints = useStore((s) => s.tonight.constraints)
+  const booking = reservationLink(stop, {
+    time: stop.startTime || constraints.startTime,
+    partySize: constraints.groupSize,
+  })
+  const reservation = booking?.url
 
   return (
     <li
@@ -82,7 +88,7 @@ function StopRow({ stop, index, count }: { stop: TonightStop; index: number; cou
             <div className="mt-1.5 flex gap-3">
               {reservation && (
                 <a href={reservation} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-sky-500 hover:underline">
-                  <ExternalLink className="h-3 w-3" /> Reserve
+                  <ExternalLink className="h-3 w-3" /> Reserve{booking?.time ? ` ${booking.time}` : ""} · {booking?.partySize}
                 </a>
               )}
               {stop.onlineOrderUrl && (
