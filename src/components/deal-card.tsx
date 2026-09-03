@@ -13,6 +13,7 @@ import {
 } from "@/lib/deal-utils"
 import { DealTypeBadge } from "./deal-type-badge"
 import { SaveDealButton } from "./save-deal-button"
+import { TonightButton } from "./tonight-button"
 import { ShareButton } from "./share-button"
 import { toast } from "sonner"
 import { trackDealClicked, trackDealReported, trackAffiliateOutbound } from "@/lib/analytics"
@@ -144,6 +145,7 @@ export const DealCard = memo(function DealCard({
 
           {/* Actions: save + share always visible, overflow for rest */}
           <div className="flex items-center gap-0.5 shrink-0">
+            <TonightButton deal={deal} />
             <SaveDealButton dealId={deal.id} />
             <ShareButton deal={deal} variant="icon" />
             <div className="relative">

@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes"
 import { useState, type ReactNode } from "react"
 import { Toaster } from "sonner"
 import { WebMCPProvider } from "./webmcp-provider"
+import { TonightPanel } from "./tonight-panel"
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         {children}
         <WebMCPProvider />
+        <TonightPanel />
         <Toaster position="bottom-center" />
       </QueryClientProvider>
     </ThemeProvider>
