@@ -115,12 +115,19 @@ function pickDeal(venue, dealId) {
   return [...deals].sort((a, b) => score(b) - score(a))[0];
 }
 
-async function resolveVenue({ venue_name, venue_id }) {
+// A name can match several locations of one venue; when the agent pinned a
+// deal_id, prefer whichever match actually carries that deal.
+async function resolveVenue({ venue_name, venue_id, deal_id }) {
   const q = new URLSearchParams();
   if (venue_name) q.set('name', venue_name);
   if (venue_id != null) q.set('id', String(venue_id));
   const data = await apiFetch(`/api/v1/venues/search?${q}`);
-  return (data.venues || [])[0] || null;
+  const venues = data.venues || [];
+  if (deal_id != null) {
+    const withDeal = venues.find((v) => (v.deals || []).some((d) => Number(d.id) === Number(deal_id)));
+    if (withDeal) return withDeal;
+  }
+  return venues[0] || null;
 }
 
 function stopFromVenue(venue, deal, extra) {
