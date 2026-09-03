@@ -41,7 +41,7 @@ function StopRow({ stop, index, count }: { stop: TonightStop; index: number; cou
   const setTonightLocked = useStore((s) => s.setTonightLocked)
   const constraints = useStore((s) => s.tonight.constraints)
   const booking = reservationLink(stop, {
-    time: stop.startTime || constraints.startTime,
+    time: constraints.startTime || stop.startTime,
     partySize: constraints.groupSize,
   })
   const reservation = booking?.url
