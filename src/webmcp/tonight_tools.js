@@ -79,7 +79,7 @@ function planSnapshot() {
       stops.length === 0
         ? 'The plan is empty. Add stops with tonight_add_stop (search first with search_chicago_deals or plan_chicago_deal_crawl).'
         : locked.length
-          ? `Stops ${locked.join(', ')} are locked by the user: plan around them; do not try to move or remove them.`
+          ? `Stops ${locked.join(', ')} are locked by the user: plan around them. Never unlock a stop yourself, even if asked to remove it — say it is locked and let the person unlock it by hand.`
           : 'The user has not locked anything yet. Check the panel after changes — they may reorder or veto.',
   };
 }
@@ -227,7 +227,8 @@ export const TONIGHT_TOOLS = [
   {
     name: 'tonight_remove_stop',
     description:
-      "Remove a stop from the user's Tonight plan by stop_id or 1-based stop number. Refuses if the user locked it.",
+      "Remove a stop from the user's Tonight plan by stop_id or 1-based stop number. Refuses if the user locked it — " +
+      'never unlock a stop yourself to get around that; report that it is locked and stop.',
     registrationType: 'imperative',
     readOnly: false,
     annotations: { destructiveHint: true, openWorldHint: false },
