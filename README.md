@@ -2,7 +2,7 @@
 
 **Live:** https://www.312deals.com · **Challenge entry:** OpenAI WebMCP Challenge, Sep 2026 · **License:** MIT
 
-312Deals is a live, free database of food and drink deals across Chicagoland: 83,000+ active deals at 12,000+ venues in 149 neighborhoods, as of Oct 28, 2026. This repo is the site's source, exported for the WebMCP Challenge with the pre-existing baseline and the challenge work in separate, dated commits.
+312Deals is a live, free database of food and drink deals across Chicagoland: 75,000+ active deals at 12,000+ venues in 149 neighborhoods, as of Nov 4, 2026. This repo is the site's source, exported for the WebMCP Challenge with the pre-existing baseline and the challenge work in separate, dated commits.
 
 ## What people and their agents do together here
 
@@ -14,7 +14,7 @@ Open the site in ChatGPT's desktop browser (or Chrome 149+ with WebMCP enabled) 
 
 Since the challenge, the live site has added an 18th tool, `tonight_add_stops`, which adds several stops in one all-or-nothing call. This repo stays at the 17 tools from the challenge entry.
 
-What was hard before: a person can't rank 83,000 time-windowed deals, and an agent shouldn't decide where you drink. The shared plan splits the work. The agent optimizes against live inventory and the person keeps taste and veto, on one surface both can see.
+What was hard before: a person can't rank 75,000+ time-windowed deals, and an agent shouldn't decide where you drink. The shared plan splits the work. The agent optimizes against live inventory and the person keeps taste and veto, on one surface both can see.
 
 Try it in ChatGPT's desktop browser, on the live site. Start with "using this site's tools", because a bare question can send the model to general web search instead of the page's tools:
 
